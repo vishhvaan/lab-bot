@@ -1,4 +1,4 @@
 package yaml
 
 const secretFile = "secrets.yml"
-const techsFile = "techs.yml"
+const membersFile = "members.yml"

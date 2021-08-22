@@ -5,6 +5,10 @@ type Secrets struct {
 	BotTolken string
 }
 
-type Techs struct {
-
+type Members struct {
+	FirstName string
+	LastName string
+	Subgroup string
+	UserID string
+	Roles []string
 }

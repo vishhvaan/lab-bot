@@ -1,0 +1,33 @@
+vishhvaan:
+  first_name: Vishhvaan
+  last_name: Gopalakrishnan
+  subgroup: bac_evol_eve_biol
+  userID: UCQFJ5Y75
+  roles:
+    - admin
+    - postdoc
+    - tech
+
+mina:
+  first_name: Mina
+  last_name: Dinh
+  subgroup: canc_evol_game_thry
+  userID: UJNFJCM8A
+  roles:
+    - tech
+
+jay:
+  first_name: Jay
+  last_name: Crump
+  subgroup: unknown
+  userID: U024RRQLURK
+  roles:
+    - tech
+
+julia:
+  first_name: Julia
+  last_name: Pelesko
+  subgroup: fitness_landscapes
+  userID: U9MCL9US0
+  roles:
+    - tech
