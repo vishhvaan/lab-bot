@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
-	"fmt"
+
+	"github.com/TheoryDivision/lab-bot/pkg/config"
+	"github.com/TheoryDivision/lab-bot/pkg/files"
 )
 
 var (
@@ -17,4 +19,9 @@ func init() {
 
 func main() {
 	flag.Parse()
+	files.CheckFile(membersFile)
+	files.CheckFile(secretsFile)
+
+	members := config.ParseMembers(membersFile)
+	secrets := config.ParseSecrets(secretsFile)
 }
