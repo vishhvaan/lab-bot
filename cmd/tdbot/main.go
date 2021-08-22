@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/TheoryDivision/tdbot/pkg/yaml"
+	"github.com/TheoryDivision/lab-bot/pkg/yaml"
 
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"

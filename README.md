@@ -1,2 +1,2 @@
-# tdbot
-A bot that helps the Theory Division perform automated tasks on Slack
+# Lab Bot
+A bot that helps labs perform automated tasks on Slack

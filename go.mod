@@ -1,4 +1,4 @@
-module github.com/TheoryDivision/tdbot
+module github.com/TheoryDivision/lab-bot
 
 go 1.17
 
