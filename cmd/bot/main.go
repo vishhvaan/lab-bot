@@ -1,18 +1,20 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"log"
-	"os"
-	"strings"
-
-	"github.com/TheoryDivision/lab-bot/pkg/yaml"
-
-	"github.com/slack-go/slack"
-	"github.com/slack-go/slack/socketmode"
-	"github.com/slack-go/slack/slackevents"
 )
 
-func main() {
+var (
+	membersFile string
+	secretsFile string
+)
 
+func init() {
+	flag.StringVar(&membersFile, "members", "members.yml", "Location of the members file")
+	flag.StringVar(&secretsFile, "secrets", "secrets.yml", "Location of the secrets file")
+}
+
+func main() {
+	flag.Parse()
 }
