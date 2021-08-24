@@ -2,9 +2,12 @@ package main
 
 import (
 	"flag"
+	"log"
+	"os"
 
 	"github.com/TheoryDivision/lab-bot/pkg/config"
 	"github.com/TheoryDivision/lab-bot/pkg/files"
+	"github.com/TheoryDivision/lab-bot/pkg/slack"
 )
 
 var (
@@ -22,6 +25,11 @@ func main() {
 	files.CheckFile(membersFile)
 	files.CheckFile(secretsFile)
 
-	members := config.ParseMembers(membersFile)
+	// members := config.ParseMembers(membersFile)
 	secrets := config.ParseSecrets(secretsFile)
+	err := slack.CheckSecrets(secrets)
+	if err != nil {
+		log.Fatalf("slack secret is invalid: %v", err)
+		os.Exit(1)
+	}
 }
