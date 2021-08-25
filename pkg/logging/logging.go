@@ -1,56 +1,40 @@
 package logging
 
 import (
-	"errors"
+	"io"
+	"os"
+	"path"
 
-	"go.uber.org/zap"
+	log "github.com/sirupsen/logrus"
 )
 
 const logFolder = "logs"
+const logLevel = log.InfoLevel
 
-// adapted from from zap.NewProductionConfig()
-func newConfig(fileName string) zap.Config {
-	return zap.Config{
-		Level:       zap.NewAtomicLevelAt(zap.InfoLevel),
-		Development: false,
-		Sampling: &zap.SamplingConfig{
-			Initial:    100,
-			Thereafter: 100,
-		},
-		Encoding:         "json",
-		EncoderConfig:    zap.NewProductionEncoderConfig(),
-		OutputPaths:      []string{"stdout", logFolder + fileName},
-		ErrorOutputPaths: []string{"stderr"},
-	}
-}
+func Setup() {
+	log.SetLevel(logLevel)
 
-func loggerGenerator(fileName string) (logger *zap.Logger, err error) {
-	cfg := newConfig(fileName)
-
-	logger, err = cfg.Build()
+	cwd, err := os.Getwd()
 	if err != nil {
-		return nil, err
+		log.Fatal("Cannot stat current working directory")
 	}
-	defer logger.Sync()
 
-	return logger, nil
-}
+	fullLogFolder := path.Join(cwd, logFolder)
+	if _, err := os.Stat(fullLogFolder); os.IsNotExist(err) {
+		err = os.Mkdir(fullLogFolder, 0600)
+		if err != nil {
+			log.Fatal("Cannot make logging directory")
+		}
+	}
 
-func StartGlobalLogger() (err error) {
-	logger, err := loggerGenerator("main")
+	logFile, err := os.OpenFile(logFolder, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
-		return err
+		log.Fatal("Cannot open log file")
 	}
-
-	undo := zap.ReplaceGlobals(logger)
-	defer undo()
-	return nil
+	mw := io.MultiWriter(os.Stdout, logFile)
+	log.SetOutput(mw)
 }
 
-func CreateLogger(fileName string) (logger *zap.Logger, err error) {
-	if fileName == "main" {
-		return nil, errors.New("cannot create logger with name \"main\"")
-	}
+func CreateNewLogger(prefix string, fileName string) {
 
-	return loggerGenerator(fileName)
 }

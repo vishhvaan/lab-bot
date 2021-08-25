@@ -6,7 +6,6 @@ import (
 
 	goslack "github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"
-	"go.uber.org/zap"
 )
 
 func CreateClient(secrets map[string]string) (api *goslack.Client, client *socketmode.Client) {
