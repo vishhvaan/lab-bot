@@ -1,36 +1,31 @@
 package logging
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 
 	"go.uber.org/zap"
 )
 
 const logFolder = "logs"
 
-func loggerGenerator(fileName string) (logger *zap.Logger, err error) {
-
-	// See the documentation for Config and zapcore.EncoderConfig for all the
-	// available options.
-	configJSON := fmt.Sprintf(`{
-		"level": "debug",
-		"encoding": "json",
-		"outputPaths": ["stdout", %v/main],
-		"errorOutputPaths": ["stderr"],
-		"encoderConfig": {
-		  "messageKey": "message",
-		  "levelKey": "level",
-		  "levelEncoder": "lowercase"
-		}
-	  }`, logFolder)
-	globalZapConfig := []byte(configJSON)
-
-	var cfg zap.Config
-	if err := json.Unmarshal(globalZapConfig, &cfg); err != nil {
-		return nil, err
+// adapted from from zap.NewProductionConfig()
+func newConfig(fileName string) zap.Config {
+	return zap.Config{
+		Level:       zap.NewAtomicLevelAt(zap.InfoLevel),
+		Development: false,
+		Sampling: &zap.SamplingConfig{
+			Initial:    100,
+			Thereafter: 100,
+		},
+		Encoding:         "json",
+		EncoderConfig:    zap.NewProductionEncoderConfig(),
+		OutputPaths:      []string{"stdout", logFolder + fileName},
+		ErrorOutputPaths: []string{"stderr"},
 	}
+}
+
+func loggerGenerator(fileName string) (logger *zap.Logger, err error) {
+	cfg := newConfig(fileName)
 
 	logger, err = cfg.Build()
 	if err != nil {
