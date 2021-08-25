@@ -2,12 +2,12 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 
 	"github.com/TheoryDivision/lab-bot/pkg/config"
 	"github.com/TheoryDivision/lab-bot/pkg/files"
 	"github.com/TheoryDivision/lab-bot/pkg/slack"
+	"go.uber.org/zap"
 )
 
 var (
@@ -22,6 +22,12 @@ func init() {
 
 func main() {
 	flag.Parse()
+
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+	undo := zap.ReplaceGlobals(logger)
+	defer undo()
+
 	files.CheckFile(membersFile)
 	files.CheckFile(secretsFile)
 
@@ -29,7 +35,9 @@ func main() {
 	secrets := config.ParseSecrets(secretsFile)
 	err := slack.CheckSecrets(secrets)
 	if err != nil {
-		log.Fatalf("slack secret is invalid: %v", err)
+		zap.L.Fatal("slack secret is invalid",
+			zap.Error(err),
+		)
 		os.Exit(1)
 	}
 
