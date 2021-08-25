@@ -32,4 +32,7 @@ func main() {
 		log.Fatalf("slack secret is invalid: %v", err)
 		os.Exit(1)
 	}
+
+	api, client := slack.CreateClient(secrets)
+
 }
