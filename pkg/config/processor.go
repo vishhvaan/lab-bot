@@ -2,8 +2,8 @@ package config
 
 import (
 	"io/ioutil"
-	"log"
 
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
 
@@ -18,12 +18,16 @@ type Member struct {
 func ParseMembers(membersFile string) (members map[string]Member) {
 	yamlMembers, err := ioutil.ReadFile(membersFile)
 	if err != nil {
-		log.Fatalf("Err: cannot read members file: %v", err)
+		zap.L().Fatal("Cannot read members file.",
+			zap.Error(err),
+		)
 	}
 
 	err = yaml.Unmarshal(yamlMembers, &members)
 	if err != nil {
-		log.Fatalf("Err: cannot parse members file: %v", err)
+		zap.L().Fatal("Cannot parse members file.",
+			zap.Error(err),
+		)
 	}
 	return members
 }
@@ -31,12 +35,16 @@ func ParseMembers(membersFile string) (members map[string]Member) {
 func ParseSecrets(secretsFile string) (secrets map[string]string) {
 	yamlSecrets, err := ioutil.ReadFile(secretsFile)
 	if err != nil {
-		log.Fatalf("Err: cannot read secrets file: %v", err)
+		zap.L().Fatal("Cannot read secrets file.",
+			zap.Error(err),
+		)
 	}
 
 	err = yaml.Unmarshal(yamlSecrets, &secrets)
 	if err != nil {
-		log.Fatalf("Err: cannot parse secrets file: %v", err)
+		zap.L().Fatal("Cannot parse secrets file.",
+			zap.Error(err),
+		)
 	}
 	return secrets
 }
