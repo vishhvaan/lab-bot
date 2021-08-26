@@ -18,6 +18,7 @@ func Setup() {
 	log.SetFormatter(&log.TextFormatter{
 		TimestampFormat: "Jan 02 15:04:05",
 		FullTimestamp:   true,
+		ForceColors: true,
 	})
 
 	cwd, err := os.Getwd()
