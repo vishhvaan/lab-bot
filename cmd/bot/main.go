@@ -21,10 +21,10 @@ func init() {
 	logging.Setup()
 	flag.StringVar(&membersFile, "members", "members.yml", "Location of the members file")
 	flag.StringVar(&secretsFile, "secrets", "secrets.yml", "Location of the secrets file")
-	fmt.Println("::: Lab Bot :::")
 }
 
 func main() {
+	fmt.Println("::: Lab Bot :::")
 	log.Info("Program Starting...")
 	flag.Parse()
 
@@ -37,7 +37,6 @@ func main() {
 	secrets := config.ParseSecrets(secretsFile)
 	slack.CheckSecrets(secrets)
 
-
-	// api, client := slack.CreateClient(secrets)
-
+	slackClient := slack.CreateClient(secrets)
+	// slackClient.SendMessage("lab-bot-channel", "Hello, world!")
 }

@@ -22,8 +22,8 @@ func Setup() {
 		ForceColors:     true,
 	})
 
-	logPath := createLogFolder()
-	logFile := createLogFile(logPath, "main")
+	logPath := CreateLogFolder()
+	logFile := CreateLogFile(logPath, "main")
 	mw := io.MultiWriter(os.Stdout, logFile)
 	log.SetOutput(mw)
 }
@@ -38,15 +38,15 @@ func CreateNewLogger(prefix string, filename string) *log.Entry {
 		ForceColors:     true,
 	})
 
-	logPath := createLogFolder()
-	logFile := createLogFile(logPath, filename)
+	logPath := CreateLogFolder()
+	logFile := CreateLogFile(logPath, filename)
 	mw := io.MultiWriter(os.Stdout, logFile)
 	logger.SetOutput(mw)
 
 	return logger.WithField("logger", prefix)
 }
 
-func createLogFolder() (fullPath string) {
+func CreateLogFolder() (fullPath string) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		log.Fatal("Cannot stat current working directory.")
@@ -59,7 +59,7 @@ func createLogFolder() (fullPath string) {
 	return fullPath
 }
 
-func createLogFile(folder string, filename string) (file *os.File) {
+func CreateLogFile(folder string, filename string) (file *os.File) {
 	file, err := files.OpenFile(folder, filename+logExt)
 	if err != nil {
 		log.Fatal("Cannot open log file.")
