@@ -1,26 +1,25 @@
 package slack
 
 import (
-	"errors"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
-func CheckSecrets(secrets map[string]string) (err error) {
+func CheckSecrets(secrets map[string]string) {
 	if secrets["SLACK_APP_TOKEN"] == "" {
-		return errors.New("app tolken not found")
+		log.Fatal("App tolken not found.")
 	}
 
 	if secrets["SLACK_BOT_TOKEN"] == "" {
-		return errors.New("bot tolken not found")
+		log.Fatal("Bot tolken not found.")
 	}
 
 	if !strings.HasPrefix(secrets["SLACK_APP_TOKEN"], "xapp-") {
-		return errors.New("SLACK_APP_TOKEN must have the prefix \"xapp-\"")
+		log.Fatal("SLACK_APP_TOKEN must have the prefix \"xapp-\".")
 	}
 
 	if !strings.HasPrefix(secrets["SLACK_BOT_TOKEN"], "xoxb-") {
-		return errors.New("SLACK_APP_TOKEN must have the prefix \"xoxb-\"")
+		log.Fatal("SLACK_APP_TOKEN must have the prefix \"xoxb-\".")
 	}
-
-	return nil
 }

@@ -35,12 +35,8 @@ func main() {
 	log.Info("Loading config files.")
 	// members := config.ParseMembers(membersFile)
 	secrets := config.ParseSecrets(secretsFile)
-	err := slack.CheckSecrets(secrets)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Fatal("Slack secret is invalid.")
-	}
+	slack.CheckSecrets(secrets)
+
 
 	// api, client := slack.CreateClient(secrets)
 

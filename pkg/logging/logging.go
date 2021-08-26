@@ -10,42 +10,59 @@ import (
 )
 
 const logFolder = "logs"
+const logExt = ".log"
 const logLevel = log.InfoLevel
 
 func Setup() {
 	log.SetLevel(logLevel)
 
 	log.SetFormatter(&log.TextFormatter{
-		TimestampFormat: "Jan 02 15:04:05",
+		TimestampFormat: "Jan 02 15:04:05.000",
 		FullTimestamp:   true,
-		ForceColors: true,
+		ForceColors:     true,
 	})
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Fatal("Cannot stat current working directory")
-	}
-
-	logFolderFull, err := files.CreateFolder(cwd, logFolder)
-	if err != nil {
-		log.Fatal("Cannot open log folder")
-	}
-
-	logFile, err := files.OpenFile(logFolderFull, "main.log")
-	if err != nil {
-		log.Fatal("Cannot open log file")
-	}
+	logPath := createLogFolder()
+	logFile := createLogFile(logPath, "main")
 	mw := io.MultiWriter(os.Stdout, logFile)
 	log.SetOutput(mw)
 }
 
-func CreateNewLogger(prefix string, fileName string) *log.Entry {
+func CreateNewLogger(prefix string, filename string) *log.Entry {
 	var logger = log.New()
+	logger.SetLevel(logLevel)
 
 	logger.SetFormatter(&log.TextFormatter{
-		TimestampFormat: "Jan 02 15:04:05",
+		TimestampFormat: "Jan 02 15:04:05.000",
 		FullTimestamp:   true,
+		ForceColors:     true,
 	})
 
-	return logger.WithField("app", prefix)
+	logPath := createLogFolder()
+	logFile := createLogFile(logPath, filename)
+	mw := io.MultiWriter(os.Stdout, logFile)
+	logger.SetOutput(mw)
+
+	return logger.WithField("logger", prefix)
+}
+
+func createLogFolder() (fullPath string) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Fatal("Cannot stat current working directory.")
+	}
+
+	fullPath, err = files.CreateFolder(cwd, logFolder)
+	if err != nil {
+		log.Fatal("Cannot open log folder.")
+	}
+	return fullPath
+}
+
+func createLogFile(folder string, filename string) (file *os.File) {
+	file, err := files.OpenFile(folder, filename+logExt)
+	if err != nil {
+		log.Fatal("Cannot open log file.")
+	}
+	return file
 }
