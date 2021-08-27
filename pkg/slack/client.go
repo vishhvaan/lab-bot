@@ -36,6 +36,6 @@ func CreateClient(secrets map[string]string) (sc slackClient) {
 	)
 
 	sc = slackClient{api: api, client: client, logger: slackLogger}
-	slackLogger.Info("Created Slack API and Client.")
+	slackLogger.Info("Created Slack client.")
 	return sc
 }

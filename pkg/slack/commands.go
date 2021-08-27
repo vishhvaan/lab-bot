@@ -13,6 +13,10 @@ func (sc slackClient) SendMessage(channel string, text string) {
 		sc.logger.WithFields(log.Fields{
 			"text":    text,
 			"channel": channel,
-		}).Info("Sent message on slack.")
+		}).Info("Sent message to Slack.")
 	}
+}
+
+func (sc slackClient) RunSocketMode() {
+	sc.client.Run()
 }

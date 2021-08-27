@@ -38,5 +38,7 @@ func main() {
 	slack.CheckSecrets(secrets)
 
 	slackClient := slack.CreateClient(secrets)
+	go slackClient.EventProcessor()
+	slackClient.RunSocketMode()
 	// slackClient.SendMessage("lab-bot-channel", "Hello, world!")
 }
