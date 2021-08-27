@@ -6,10 +6,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/TheoryDivision/lab-bot/pkg/config"
-	"github.com/TheoryDivision/lab-bot/pkg/files"
-	"github.com/TheoryDivision/lab-bot/pkg/logging"
-	"github.com/TheoryDivision/lab-bot/pkg/slack"
+	"github.com/vishhvaan/lab-bot/pkg/config"
+	"github.com/vishhvaan/lab-bot/pkg/files"
+	"github.com/vishhvaan/lab-bot/pkg/logging"
+	"github.com/vishhvaan/lab-bot/pkg/slack"
 )
 
 var (

@@ -6,7 +6,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/TheoryDivision/lab-bot/pkg/files"
+	"github.com/vishhvaan/lab-bot/pkg/files"
 )
 
 const logFolder = "logs"

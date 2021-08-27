@@ -1,4 +1,4 @@
-module github.com/TheoryDivision/lab-bot
+module github.com/vishhvaan/lab-bot
 
 go 1.17
 

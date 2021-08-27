@@ -7,7 +7,7 @@ import (
 	goslack "github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"
 
-	"github.com/TheoryDivision/lab-bot/pkg/logging"
+	"github.com/vishhvaan/lab-bot/pkg/logging"
 )
 
 type slackClient struct {
