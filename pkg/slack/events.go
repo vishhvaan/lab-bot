@@ -28,7 +28,8 @@ func (sc slackClient) EventProcessor() {
 			case slackevents.CallbackEvent:
 				go sc.cbEventProcessor(eventsAPIEvent)
 			default:
-				sc.logger.WithField("event", eventsAPIEvent).Warn("Unsupported Events API event received.")
+				sc.logger.WithField("event", eventsAPIEvent).Warn(
+					"Unsupported Events API event received.")
 			}
 		}
 	}
