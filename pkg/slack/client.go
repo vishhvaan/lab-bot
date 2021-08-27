@@ -11,9 +11,10 @@ import (
 )
 
 type slackClient struct {
-	api    *goslack.Client
-	client *socketmode.Client
-	logger *log.Entry
+	api       *goslack.Client
+	client    *socketmode.Client
+	logger    *log.Entry
+	responses map[string]cb
 }
 
 func CreateClient(secrets map[string]string) (sc slackClient) {
@@ -34,7 +35,7 @@ func CreateClient(secrets map[string]string) (sc slackClient) {
 		socketmode.OptionLog(stdlog.New(logFileInternal, "socketmode: ", stdlog.Lshortfile|stdlog.LstdFlags)),
 	)
 
-	sc = slackClient{api: api, client: client, logger: slackLogger}
+	sc = slackClient{api: api, client: client, logger: slackLogger, responses: getResponses()}
 	slackLogger.Info("Created Slack client.")
 	return sc
 }

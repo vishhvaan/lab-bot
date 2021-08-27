@@ -26,7 +26,7 @@ func (sc slackClient) EventProcessor() {
 
 			switch eventsAPIEvent.Type {
 			case slackevents.CallbackEvent:
-				sc.cbEventProcessor(eventsAPIEvent)
+				go sc.cbEventProcessor(eventsAPIEvent)
 			default:
 				sc.logger.WithField("event", eventsAPIEvent).Warn("Unsupported Events API event received.")
 			}
@@ -43,15 +43,11 @@ func (sc slackClient) cbEventProcessor(eventsAPIEvent slackevents.EventsAPIEvent
 }
 
 func (sc slackClient) appMentionSubprocessor(ev *slackevents.AppMentionEvent) {
-	sc.logger.WithFields(log.Fields{
+	go sc.logger.WithFields(log.Fields{
 		"text":    ev.Text,
 		"channel": sc.getChannelName(ev.Channel),
 		"user":    sc.getUserName(ev.User),
 	}).Info("App mentioned.")
-	// sc.textPreprocessor(ev.Text)
-	// switch
+	sc.launchCB(ev)
 }
 
-func (sc slackClient) textPreprocessor(text string) {
-
-}
