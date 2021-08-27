@@ -17,7 +17,6 @@ type slackClient struct {
 }
 
 func CreateClient(secrets map[string]string) (sc slackClient) {
-
 	logFolder := logging.CreateLogFolder()
 	logFileInternal := logging.CreateLogFile(logFolder, "slack_internal")
 	slackLogger := logging.CreateNewLogger("slack", "slack")
