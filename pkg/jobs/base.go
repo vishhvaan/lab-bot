@@ -1,5 +1,9 @@
 package jobs
 
+import (
+	"github.com/go-co-op/gocron"
+)
+
 /*
 Todo:
 schedule jobs with github.com/go-co-op/gocron
@@ -18,3 +22,10 @@ apply jobs to those roles
 upload new members.yml via messages
 check and rewrite file and map
 */
+
+type labJob struct {
+	status    string
+	name      string
+	frequency string
+	sched     *gocron.Scheduler
+}

@@ -6,7 +6,7 @@ import (
 	"github.com/slack-go/slack/slackevents"
 )
 
-type cb func(slackClient, *slackevents.AppMentionEvent, string)
+type cb func(*slackClient, *slackevents.AppMentionEvent, string)
 
 func getResponses() map[string]cb {
 	return map[string]cb{
@@ -16,7 +16,7 @@ func getResponses() map[string]cb {
 	}
 }
 
-func (sc slackClient) launchCB(ev *slackevents.AppMentionEvent) {
+func (sc *slackClient) launchCB(ev *slackevents.AppMentionEvent) {
 	match, err := sc.textMatcher(ev.Text)
 	if err == "" {
 		f := sc.responses[match]
@@ -30,7 +30,7 @@ func (sc slackClient) launchCB(ev *slackevents.AppMentionEvent) {
 	}
 }
 
-func (sc slackClient) textMatcher(message string) (match string, err string) {
+func (sc *slackClient) textMatcher(message string) (match string, err string) {
 	message = strings.ToLower(message)
 	match = ""
 	err = "no match found"
@@ -47,12 +47,12 @@ func (sc slackClient) textMatcher(message string) (match string, err string) {
 	return match, err
 }
 
-func hello(sc slackClient, ev *slackevents.AppMentionEvent, match string) {
+func hello(sc *slackClient, ev *slackevents.AppMentionEvent, match string) {
 	response := "Hello, " + sc.getUserName(ev.User) + "! :party_parrot:"
 	sc.PostMessage(ev.Channel, response)
 }
 
-func bye(sc slackClient, ev *slackevents.AppMentionEvent, match string) {
+func bye(sc *slackClient, ev *slackevents.AppMentionEvent, match string) {
 	response := "Goodbye, " + sc.getUserName(ev.User) + "! :wave:"
 	sc.PostMessage(ev.Channel, response)
 }

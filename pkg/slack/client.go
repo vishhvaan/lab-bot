@@ -17,7 +17,7 @@ type slackClient struct {
 	responses map[string]cb
 }
 
-func CreateClient(secrets map[string]string) (sc slackClient) {
+func CreateClient(secrets map[string]string) (sc *slackClient) {
 	logFolder := logging.CreateLogFolder()
 	logFileInternal := logging.CreateLogFile(logFolder, "slack_internal")
 	slackLogger := logging.CreateNewLogger("slack", "slack")
@@ -35,7 +35,12 @@ func CreateClient(secrets map[string]string) (sc slackClient) {
 		socketmode.OptionLog(stdlog.New(logFileInternal, "socketmode: ", stdlog.Lshortfile|stdlog.LstdFlags)),
 	)
 
-	sc = slackClient{api: api, client: client, logger: slackLogger, responses: getResponses()}
+	sc = &slackClient{
+			api: api, 
+			client: client, 
+			logger: slackLogger, 
+			responses: getResponses(),
+		}
 	slackLogger.Info("Created Slack client.")
 	return sc
 }

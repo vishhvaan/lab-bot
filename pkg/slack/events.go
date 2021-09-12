@@ -6,7 +6,7 @@ import (
 	"github.com/slack-go/slack/socketmode"
 )
 
-func (sc slackClient) EventProcessor() {
+func (sc *slackClient) EventProcessor() {
 	for evt := range sc.client.Events {
 		switch evt.Type {
 		case socketmode.EventTypeConnecting:
@@ -35,7 +35,7 @@ func (sc slackClient) EventProcessor() {
 	}
 }
 
-func (sc slackClient) cbEventProcessor(eventsAPIEvent slackevents.EventsAPIEvent) {
+func (sc *slackClient) cbEventProcessor(eventsAPIEvent slackevents.EventsAPIEvent) {
 	innerEvent := eventsAPIEvent.InnerEvent
 	switch ev := innerEvent.Data.(type) {
 	case *slackevents.AppMentionEvent:
@@ -43,7 +43,7 @@ func (sc slackClient) cbEventProcessor(eventsAPIEvent slackevents.EventsAPIEvent
 	}
 }
 
-func (sc slackClient) appMentionSubprocessor(ev *slackevents.AppMentionEvent) {
+func (sc *slackClient) appMentionSubprocessor(ev *slackevents.AppMentionEvent) {
 	go sc.logger.WithFields(log.Fields{
 		"text":    ev.Text,
 		"channel": sc.getChannelName(ev.Channel),
