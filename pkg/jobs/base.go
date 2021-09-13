@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"github.com/go-co-op/gocron"
+	log "github.com/sirupsen/logrus"
 )
 
 /*
@@ -24,8 +25,26 @@ check and rewrite file and map
 */
 
 type labJob struct {
-	status    string
 	name      string
+	status    string
+	desc      string
 	frequency string
 	sched     *gocron.Scheduler
+}
+
+type jobHandler struct {
+	jobs   []*labJob
+	logger *log.Entry
+}
+
+func initJobs() (ljs []*labJob) {
+	var techRemind labJob
+	techRemind.name = "techRemind"
+	ljs = append(ljs, &techRemind)
+
+	return ljs
+}
+
+func CreateHandler() {
+
 }
