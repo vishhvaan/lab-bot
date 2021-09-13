@@ -4,7 +4,3 @@ import (
 	"github.com/go-co-op/gocron"
 )
 
-func techRemindScheduler() () {
-
-	
-}

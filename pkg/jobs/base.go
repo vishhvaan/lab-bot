@@ -3,6 +3,8 @@ package jobs
 import (
 	"github.com/go-co-op/gocron"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/vishhvaan/lab-bot/pkg/logging"
 )
 
 /*
@@ -30,21 +32,27 @@ type labJob struct {
 	desc      string
 	frequency string
 	sched     *gocron.Scheduler
+	logger    *log.Entry
 }
 
 type jobHandler struct {
-	jobs   []*labJob
-	logger *log.Entry
+	techRemind *labJob
+	logger     *log.Entry
 }
 
-func initJobs() (ljs []*labJob) {
-	var techRemind labJob
-	techRemind.name = "techRemind"
-	ljs = append(ljs, &techRemind)
-
-	return ljs
+func (lj labJob) initJob(name string, logger *log.Entry) {
+	lj.name = name
+	lj.logger = logger.WithField("job", name)
 }
 
-func CreateHandler() {
+func CreateHandler() (jh *jobHandler) {
+	jobLogger := logging.CreateNewLogger("jobhandler", "jobhandler")
 
+	var tr labJob
+	tr.initJob("techremind", jobLogger)
+
+	return &jobHandler{
+		techRemind: &tr,
+		logger:     jobLogger,
+	}
 }
