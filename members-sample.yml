@@ -1,0 +1,9 @@
+name:
+  first_name: first-name
+  last_name: last-name
+  subgroup: subgroup
+  userID: UERFJ6YA7A
+  roles:
+    - admin
+    - postdoc
+    - tech
