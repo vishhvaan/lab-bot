@@ -13,6 +13,7 @@ func getResponses() map[string]cb {
 		"hello": hello, "hai": hello, "hey": hello,
 		"sup": hello, "hi": hello,
 		"bye": bye, "goodbye": bye, "tata": bye,
+		"coffee machine": coffee,
 	}
 }
 
@@ -47,6 +48,18 @@ func (sc *slackClient) textMatcher(message string) (match string, err string) {
 	return match, err
 }
 
+
+func onOffDetector(message string) (detected string) {
+	lm := strings.ToLower(message)
+	if strings.Contains(lm, " on") && !strings.Contains(lm, " off") {
+		return "on"
+	} else if strings.Contains(lm, " off") && !strings.Contains(lm, " on") {
+		return "off"
+	} else {
+		return "both"
+	}
+}
+
 func hello(sc *slackClient, ev *slackevents.AppMentionEvent, match string) {
 	response := "Hello, " + sc.getUserName(ev.User) + "! :party_parrot:"
 	sc.PostMessage(ev.Channel, response)
@@ -54,5 +67,12 @@ func hello(sc *slackClient, ev *slackevents.AppMentionEvent, match string) {
 
 func bye(sc *slackClient, ev *slackevents.AppMentionEvent, match string) {
 	response := "Goodbye, " + sc.getUserName(ev.User) + "! :wave:"
+	sc.PostMessage(ev.Channel, response)
+}
+
+func coffee(sc *slackClient, ev *slackevents.AppMentionEvent, match string) {
+	control := onOffDetector(ev.Text)
+
+	response := "" + sc.getUserName(ev.User) + "! :wave:"
 	sc.PostMessage(ev.Channel, response)
 }

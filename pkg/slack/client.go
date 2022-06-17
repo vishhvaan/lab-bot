@@ -25,7 +25,10 @@ func CreateClient(secrets map[string]string) (sc *slackClient) {
 	api := goslack.New(
 		secrets["SLACK_BOT_TOKEN"],
 		goslack.OptionDebug(true),
-		goslack.OptionLog(stdlog.New(logFileInternal, "api: ", stdlog.Lshortfile|stdlog.LstdFlags)),
+		goslack.OptionLog(stdlog.New(logFileInternal, 
+			"api: ", 
+			stdlog.Lshortfile|stdlog.LstdFlags,
+			)),
 		goslack.OptionAppLevelToken(secrets["SLACK_APP_TOKEN"]),
 	)
 
