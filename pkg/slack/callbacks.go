@@ -71,8 +71,8 @@ func bye(sc *slackClient, ev *slackevents.AppMentionEvent, match string) {
 }
 
 func coffee(sc *slackClient, ev *slackevents.AppMentionEvent, match string) {
-	control := onOffDetector(ev.Text)
+	// control := onOffDetector(ev.Text)
 
-	response := "" + sc.getUserName(ev.User) + "! :wave:"
+	response := "WIP" + sc.getUserName(ev.User) + "! :wave:"
 	sc.PostMessage(ev.Channel, response)
 }

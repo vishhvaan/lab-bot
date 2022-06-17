@@ -20,6 +20,6 @@ func CheckSecrets(secrets map[string]string) {
 	}
 
 	if !strings.HasPrefix(secrets["SLACK_BOT_TOKEN"], "xoxb-") {
-		log.Fatal("SLACK_APP_TOKEN must have the prefix \"xoxb-\".")
+		log.Fatal("SLACK_BOT_TOKEN must have the prefix \"xoxb-\".")
 	}
 }
