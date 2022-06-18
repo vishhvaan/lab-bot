@@ -15,12 +15,15 @@ import (
 var (
 	membersFile string
 	secretsFile string
+	botName     string
+	botChannel  string
 )
 
 func init() {
 	logging.Setup()
 	flag.StringVar(&membersFile, "members", "members.yml", "Location of the members file")
 	flag.StringVar(&secretsFile, "secrets", "secrets.yml", "Location of the secrets file")
+	flag.StringVar(&botChannel, "channel", "lab-bot-channel", "Name of the bot channel")
 }
 
 func main() {
@@ -37,7 +40,8 @@ func main() {
 	secrets := config.ParseSecrets(secretsFile)
 	slack.CheckSecrets(secrets)
 
-	slackClient := slack.CreateClient(secrets, members)
+	slackClient := slack.CreateClient(secrets, members, botChannel)
 	go slackClient.EventProcessor()
 	slackClient.RunSocketMode()
+	slackClient.PostStartupMessage()
 }
