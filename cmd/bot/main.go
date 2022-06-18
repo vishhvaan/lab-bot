@@ -43,5 +43,4 @@ func main() {
 	slackClient := slack.CreateClient(secrets, members, botChannel)
 	go slackClient.EventProcessor()
 	slackClient.RunSocketMode()
-	slackClient.PostStartupMessage()
 }

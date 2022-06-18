@@ -1,8 +1,10 @@
 package slack
 
 import (
-	"errors"
+	"fmt"
 	stdlog "log"
+	"os"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	goslack "github.com/slack-go/slack"
@@ -13,13 +15,18 @@ import (
 )
 
 type slackClient struct {
-	api        *goslack.Client
-	client     *socketmode.Client
+	api       *goslack.Client
+	client    *socketmode.Client
+	botInfo   *slackBot
+	logger    *log.Entry
+	members   map[string]config.Member
+	responses map[string]cb
+}
+
+type slackBot struct {
 	bot        *goslack.Bot
+	botID      string
 	botChannel string
-	logger     *log.Entry
-	members    map[string]config.Member
-	responses  map[string]cb
 }
 
 func CreateClient(secrets map[string]string, members map[string]config.Member, botChannel string) (sc *slackClient) {
@@ -43,46 +50,49 @@ func CreateClient(secrets map[string]string, members map[string]config.Member, b
 		socketmode.OptionLog(stdlog.New(logFileInternal, "socketmode: ", stdlog.Lshortfile|stdlog.LstdFlags)),
 	)
 
-	u, err := api.GetUserIdentity()
+	currentTime := time.Now()
+	hn, err := os.Hostname()
 	if err != nil {
-		slackLogger.WithField("err", err).Fatal("Couldn't find self on Slack")
+		slackLogger.WithField("err", err).Error("Couldn't find OS hostname.")
 	}
-	bot, err := api.GetBotInfo(u.User.ID)
+	m := fmt.Sprintf("lab-bot launched at %s on %s", currentTime.Format(time.UnixDate), hn)
+	botChannelID, _, _, err := api.SendMessage(botChannel, goslack.MsgOptionText(m, false))
 	if err != nil {
-		slackLogger.WithField("err", err).Fatal("Couldn't find bot")
+		slackLogger.WithField("err", err).Fatal("Couldn't send message to the lab bot channel.")
+	} else {
+		slackLogger.WithFields(log.Fields{
+			"text":    m,
+			"channel": botChannel,
+		}).Info("Sent startup message to Slack.")
 	}
 
-	// verify that the botChannel exists
-	botChannels, _, err := api.GetConversationsForUser(&goslack.GetConversationsForUserParameters{
-		UserID:          bot.ID,
-		ExcludeArchived: true,
+	r, err := api.GetConversationHistory(&goslack.GetConversationHistoryParameters{
+		ChannelID: botChannelID,
+		Limit:     1,
 	})
 	if err != nil {
-		slackLogger.WithField("err", err).Fatal("Couldn't get list of bot channels")
+		slackLogger.WithField("err", err).Fatal("Couldn't get history of message on the lab bot channel.")
 	}
-
-	var botChannelID string
-	err = errors.New("Couldn't find bot channel")
-	for _, c := range botChannels {
-		if c.Name == botChannel {
-			slackLogger.Info("Found bot channel on Slack")
-			botChannelID = c.ID
-			err = nil
-			break
-		}
-	}
+	botID := r.Messages[0].BotID
+	bot, err := api.GetBotInfo(botID)
 	if err != nil {
-		slackLogger.Fatal(err)
+		slackLogger.WithField("err", err).Fatal("Couldn't find bot with ID.")
+	}
+	slackLogger.Info(fmt.Sprintf("%s has a bot ID of %s", bot.Name, botID))
+
+	b := &slackBot{
+		bot:        bot,
+		botID:      botID,
+		botChannel: botChannelID,
 	}
 
 	sc = &slackClient{
-		api:        api,
-		client:     client,
-		bot:        bot,
-		botChannel: botChannelID,
-		logger:     slackLogger,
-		members:    members,
-		responses:  getResponses(),
+		api:       api,
+		client:    client,
+		botInfo:   b,
+		logger:    slackLogger,
+		members:   members,
+		responses: getResponses(),
 	}
 	slackLogger.Info("Created Slack client.")
 	return sc
