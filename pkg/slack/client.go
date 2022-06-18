@@ -7,6 +7,7 @@ import (
 	goslack "github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"
 
+	"github.com/vishhvaan/lab-bot/pkg/config"
 	"github.com/vishhvaan/lab-bot/pkg/logging"
 )
 
@@ -14,10 +15,11 @@ type slackClient struct {
 	api       *goslack.Client
 	client    *socketmode.Client
 	logger    *log.Entry
+	members   map[string]config.Member
 	responses map[string]cb
 }
 
-func CreateClient(secrets map[string]string) (sc *slackClient) {
+func CreateClient(secrets map[string]string, members map[string]config.Member) (sc *slackClient) {
 	logFolder := logging.CreateLogFolder()
 	logFileInternal := logging.CreateLogFile(logFolder, "slack_internal")
 	slackLogger := logging.CreateNewLogger("slack", "slack")
@@ -25,10 +27,10 @@ func CreateClient(secrets map[string]string) (sc *slackClient) {
 	api := goslack.New(
 		secrets["SLACK_BOT_TOKEN"],
 		goslack.OptionDebug(true),
-		goslack.OptionLog(stdlog.New(logFileInternal, 
-			"api: ", 
+		goslack.OptionLog(stdlog.New(logFileInternal,
+			"api: ",
 			stdlog.Lshortfile|stdlog.LstdFlags,
-			)),
+		)),
 		goslack.OptionAppLevelToken(secrets["SLACK_APP_TOKEN"]),
 	)
 
@@ -42,6 +44,7 @@ func CreateClient(secrets map[string]string) (sc *slackClient) {
 		api:       api,
 		client:    client,
 		logger:    slackLogger,
+		members:   members,
 		responses: getResponses(),
 	}
 	slackLogger.Info("Created Slack client.")

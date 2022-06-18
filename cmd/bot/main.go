@@ -33,11 +33,11 @@ func main() {
 	files.CheckFile(secretsFile)
 
 	log.Info("Loading config files.")
-	// members := config.ParseMembers(membersFile)
+	members := config.ParseMembers(membersFile)
 	secrets := config.ParseSecrets(secretsFile)
 	slack.CheckSecrets(secrets)
 
-	slackClient := slack.CreateClient(secrets)
+	slackClient := slack.CreateClient(secrets, members)
 	go slackClient.EventProcessor()
 	slackClient.RunSocketMode()
 }
