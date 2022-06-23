@@ -4,6 +4,8 @@ import (
 	"strings"
 
 	"github.com/slack-go/slack/slackevents"
+
+	"github.com/vishhvaan/lab-bot/pkg/functions"
 )
 
 type cb func(*slackClient, *slackevents.AppMentionEvent, string)
@@ -70,8 +72,6 @@ func bye(sc *slackClient, ev *slackevents.AppMentionEvent, match string) {
 }
 
 func sysinfo(sc *slackClient, ev *slackevents.AppMentionEvent, match string) {
-	// control := onOffDetector(ev.Text)
-
-	response := "WIP" + sc.getUserName(ev.User) + "! :wave:"
+	response := functions.GetSysInfo()
 	sc.PostMessage(ev.Channel, response)
 }
