@@ -7,19 +7,19 @@ import (
 )
 
 func CheckSecrets(secrets map[string]string) {
-	if secrets["SLACK_APP_TOKEN"] == "" {
-		log.Fatal("App tolken not found.")
+	if secrets["slack-app-token"] == "" {
+		log.Fatal("App token not found.")
 	}
 
-	if secrets["SLACK_BOT_TOKEN"] == "" {
-		log.Fatal("Bot tolken not found.")
+	if secrets["slack-bot-token"] == "" {
+		log.Fatal("Bot token not found.")
 	}
 
-	if !strings.HasPrefix(secrets["SLACK_APP_TOKEN"], "xapp-") {
-		log.Fatal("SLACK_APP_TOKEN must have the prefix \"xapp-\".")
+	if !strings.HasPrefix(secrets["slack-app-token"], "xapp-") {
+		log.Fatal("slack-app-token must have the prefix \"xapp-\".")
 	}
 
-	if !strings.HasPrefix(secrets["SLACK_BOT_TOKEN"], "xoxb-") {
-		log.Fatal("SLACK_BOT_TOKEN must have the prefix \"xoxb-\".")
+	if !strings.HasPrefix(secrets["slack-bot-token"], "xoxb-") {
+		log.Fatal("slack-bot-token must have the prefix \"xoxb-\".")
 	}
 }

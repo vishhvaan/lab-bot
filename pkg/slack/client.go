@@ -35,13 +35,13 @@ func CreateClient(secrets map[string]string, members map[string]config.Member, b
 	slackLogger := logging.CreateNewLogger("slack", "slack")
 
 	api := goslack.New(
-		secrets["SLACK_BOT_TOKEN"],
+		secrets["slack-bot-token"],
 		goslack.OptionDebug(true),
 		goslack.OptionLog(stdlog.New(logFileInternal,
 			"api: ",
 			stdlog.Lshortfile|stdlog.LstdFlags,
 		)),
-		goslack.OptionAppLevelToken(secrets["SLACK_APP_TOKEN"]),
+		goslack.OptionAppLevelToken(secrets["slack-app-token"]),
 	)
 
 	client := socketmode.New(
