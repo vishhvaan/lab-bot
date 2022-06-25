@@ -153,18 +153,19 @@ func (cj *controllerJob) slackPowerResponse(status bool, err error, ev *slackeve
 		statusString = "on"
 	}
 	if err != nil {
-		message := "Couldn't turn " + statusString + " " + cj.machineName
+		message := "Couldn't turn " + statusString + " the " + cj.machineName
 		cj.logger.WithField("err", err).Error(message)
 		cj.messenger <- slack.MessageInfo{
 			Text: message,
 		}
 	} else {
 		cj.powerStatus = status
-		message := "Turned " + statusString + " " + cj.machineName
+		message := "Turned " + statusString + " the " + cj.machineName
 		cj.logger.Info(message)
 		cj.messenger <- slack.MessageInfo{
 			Type:      "react",
 			Timestamp: ev.TimeStamp,
+			ChannelID: ev.Channel,
 			Text:      "ok_hand",
 		}
 		cj.messenger <- slack.MessageInfo{
