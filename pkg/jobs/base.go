@@ -36,6 +36,8 @@ type labJob struct {
 
 type job interface {
 	init()
+	enable()
+	disable()
 }
 
 type controllerJob struct {
@@ -46,18 +48,30 @@ type controllerJob struct {
 }
 
 type controller interface {
+	init()
 	turnOn()
 	turnOff()
 }
 
 type JobHandler struct {
+	jobs   []*job
 	logger *log.Entry
 }
 
 func CreateHandler() (jh *JobHandler) {
+	var jobs []*job
 	jobLogger := logging.CreateNewLogger("jobhandler", "jobhandler")
 
 	return &JobHandler{
+		jobs:   jobs,
 		logger: jobLogger,
 	}
+}
+
+func (lj *labJob) init() {
+	lj.status = true
+}
+
+func (cj *controllerJob) init() {
+	cj.labJob.init()
 }
