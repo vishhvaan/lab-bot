@@ -50,6 +50,7 @@ type controllerJob struct {
 	labJob
 	machineName string
 	powerStatus bool
+	device      any
 	customInit  func() (err error)
 	customOn    func() (err error)
 	customOff   func() (err error)
