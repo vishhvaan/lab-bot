@@ -100,9 +100,9 @@ func (jh *JobHandler) CommandReciever(c chan slack.CommandInfo) {
 
 func (lj *labJob) init() {
 	lj.status = true
-	lj.messenger <- slack.MessageInfo{
-		Text: lj.name + " has been loaded",
-	}
+	// lj.messenger <- slack.MessageInfo{
+	// 	Text: lj.name + " has been loaded",
+	// }
 }
 
 func (lj *labJob) enable() {
@@ -121,6 +121,19 @@ func (lj *labJob) commandProcessor(ev *slackevents.AppMentionEvent) {}
 
 func (cj *controllerJob) init() {
 	cj.labJob.init()
+	var message string
+	err := cj.customInit()
+	if err != nil {
+		message := "Couldn't load " + cj.name
+		cj.logger.Error(message)
+	} else {
+		message := cj.name + " loaded"
+		cj.logger.Info(message)
+	}
+	cj.messenger <- slack.MessageInfo{
+		Text: message,
+	}
+
 }
 
 func (cj *controllerJob) turnOn(ev *slackevents.AppMentionEvent) {
@@ -171,27 +184,34 @@ func (cj *controllerJob) getPowerStatus(ev *slackevents.AppMentionEvent) {
 }
 
 func (cj *controllerJob) commandProcessor(ev *slackevents.AppMentionEvent) {
-	controllerActions := map[string]action{
-		"on":     cj.turnOn,
-		"off":    cj.turnOff,
-		"status": cj.getPowerStatus,
-	}
-	k := slack.GetKeys(controllerActions)
-	match, err := slack.TextMatcher(ev.Text, k)
-	if err == nil {
-		f := controllerActions[match]
-		f(ev)
-	} else if err == errors.New("no match found") {
-		cj.logger.Warn("No callback function found.")
-		cj.messenger <- slack.MessageInfo{
-			ChannelID: ev.Channel,
-			Text:      "I'm not sure what you sayin",
+	if cj.status {
+		controllerActions := map[string]action{
+			"on":     cj.turnOn,
+			"off":    cj.turnOff,
+			"status": cj.getPowerStatus,
+		}
+		k := slack.GetKeys(controllerActions)
+		match, err := slack.TextMatcher(ev.Text, k)
+		if err == nil {
+			f := controllerActions[match]
+			f(ev)
+		} else if err == errors.New("no match found") {
+			cj.logger.Warn("No callback function found.")
+			cj.messenger <- slack.MessageInfo{
+				ChannelID: ev.Channel,
+				Text:      "I'm not sure what you sayin",
+			}
+		} else {
+			cj.logger.Warn("Many callback functions found.")
+			cj.messenger <- slack.MessageInfo{
+				ChannelID: ev.Channel,
+				Text:      "I can respond in multiple ways ...",
+			}
 		}
 	} else {
-		cj.logger.Warn("Many callback functions found.")
 		cj.messenger <- slack.MessageInfo{
 			ChannelID: ev.Channel,
-			Text:      "I can respond in multiple ways ...",
+			Text:      "The " + cj.name + " is disabled",
 		}
 	}
 }
