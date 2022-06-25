@@ -125,7 +125,7 @@ func (cj *controllerJob) init() {
 	err := cj.customInit()
 	if err != nil {
 		message := "Couldn't load " + cj.name
-		cj.logger.Error(message)
+		cj.logger.WithField("err", err).Error(message)
 	} else {
 		message := cj.name + " loaded"
 		cj.logger.Info(message)
@@ -153,7 +153,7 @@ func (cj *controllerJob) slackPowerResponse(status bool, err error, ev *slackeve
 	}
 	if err != nil {
 		message := "Couldn't turn " + statusString + " " + cj.machineName
-		cj.logger.Error(message)
+		cj.logger.WithField("err", err).Error(message)
 		cj.messenger <- slack.MessageInfo{
 			Text: message,
 		}
