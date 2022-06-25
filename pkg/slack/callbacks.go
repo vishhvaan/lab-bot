@@ -6,7 +6,7 @@ import (
 	"github.com/vishhvaan/lab-bot/pkg/functions"
 )
 
-type cb func(*slackClient, *slackevents.AppMentionEvent, string, chan CommandInfo)
+type cb func(*slackClient, *slackevents.AppMentionEvent, string)
 
 func getResponses() map[string]cb {
 	return map[string]cb{
@@ -17,11 +17,11 @@ func getResponses() map[string]cb {
 	}
 }
 
-func (sc *slackClient) launchCB(ev *slackevents.AppMentionEvent, c chan CommandInfo) {
+func (sc *slackClient) launchCB(ev *slackevents.AppMentionEvent) {
 	match, err := sc.textMatcher(ev.Text)
 	if err == "" {
 		f := sc.responses[match]
-		f(sc, ev, match, c)
+		f(sc, ev, match)
 	} else if err == "no match found" {
 		sc.logger.Warn("No callback function found.")
 		sc.PostMessage(MessageInfo{
@@ -37,7 +37,7 @@ func (sc *slackClient) launchCB(ev *slackevents.AppMentionEvent, c chan CommandI
 	}
 }
 
-func hello(sc *slackClient, ev *slackevents.AppMentionEvent, match string, c chan CommandInfo) {
+func hello(sc *slackClient, ev *slackevents.AppMentionEvent, match string) {
 	response := "Hello, " + sc.getUserName(ev.User) + "! :party_parrot:"
 	sc.PostMessage(MessageInfo{
 		ChannelID: ev.Channel,
@@ -45,7 +45,7 @@ func hello(sc *slackClient, ev *slackevents.AppMentionEvent, match string, c cha
 	})
 }
 
-func bye(sc *slackClient, ev *slackevents.AppMentionEvent, match string, c chan CommandInfo) {
+func bye(sc *slackClient, ev *slackevents.AppMentionEvent, match string) {
 	response := "Goodbye, " + sc.getUserName(ev.User) + "! :wave:"
 	sc.PostMessage(MessageInfo{
 		ChannelID: ev.Channel,
@@ -53,7 +53,7 @@ func bye(sc *slackClient, ev *slackevents.AppMentionEvent, match string, c chan 
 	})
 }
 
-func sysinfo(sc *slackClient, ev *slackevents.AppMentionEvent, match string, c chan CommandInfo) {
+func sysinfo(sc *slackClient, ev *slackevents.AppMentionEvent, match string) {
 	response := functions.GetSysInfo()
 	sc.PostMessage(MessageInfo{
 		ChannelID: ev.Channel,

@@ -46,9 +46,9 @@ func main() {
 	messages := make(chan slack.MessageInfo)
 	commands := make(chan slack.CommandInfo)
 
-	slackClient := slack.CreateClient(secrets, members, botChannel)
+	slackClient := slack.CreateClient(secrets, members, botChannel, commands)
 	go slackClient.MessageProcessor(messages)
-	go slackClient.EventProcessor(commands)
+	go slackClient.EventProcessor()
 	go slackClient.RunSocketMode()
 
 	jobHandler := jobs.CreateHandler(messages)

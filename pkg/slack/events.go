@@ -6,7 +6,7 @@ import (
 	"github.com/slack-go/slack/socketmode"
 )
 
-func (sc *slackClient) EventProcessor(c chan CommandInfo) {
+func (sc *slackClient) EventProcessor() {
 	for evt := range sc.client.Events {
 		switch evt.Type {
 		case socketmode.EventTypeConnecting:
@@ -26,7 +26,7 @@ func (sc *slackClient) EventProcessor(c chan CommandInfo) {
 
 			switch eventsAPIEvent.Type {
 			case slackevents.CallbackEvent:
-				go sc.cbEventProcessor(eventsAPIEvent, c)
+				go sc.cbEventProcessor(eventsAPIEvent)
 			default:
 				sc.logger.WithField("event", eventsAPIEvent).Warn(
 					"Unsupported Events API event received.")
@@ -35,19 +35,19 @@ func (sc *slackClient) EventProcessor(c chan CommandInfo) {
 	}
 }
 
-func (sc *slackClient) cbEventProcessor(eventsAPIEvent slackevents.EventsAPIEvent, c chan CommandInfo) {
+func (sc *slackClient) cbEventProcessor(eventsAPIEvent slackevents.EventsAPIEvent) {
 	innerEvent := eventsAPIEvent.InnerEvent
 	switch ev := innerEvent.Data.(type) {
 	case *slackevents.AppMentionEvent:
-		sc.appMentionSubprocessor(ev, c)
+		sc.appMentionSubprocessor(ev)
 	}
 }
 
-func (sc *slackClient) appMentionSubprocessor(ev *slackevents.AppMentionEvent, c chan CommandInfo) {
+func (sc *slackClient) appMentionSubprocessor(ev *slackevents.AppMentionEvent) {
 	go sc.logger.WithFields(log.Fields{
 		"text":    ev.Text,
 		"channel": sc.getChannelName(ev.Channel),
 		"user":    sc.getUserName(ev.User),
 	}).Info("App mentioned.")
-	sc.launchCB(ev, c)
+	sc.launchCB(ev)
 }

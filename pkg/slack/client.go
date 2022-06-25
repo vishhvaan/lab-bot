@@ -21,6 +21,7 @@ type slackClient struct {
 	logger    *log.Entry
 	members   map[string]config.Member
 	responses map[string]cb
+	commander chan CommandInfo
 }
 
 type slackBot struct {
@@ -29,7 +30,8 @@ type slackBot struct {
 	botChannelID string
 }
 
-func CreateClient(secrets map[string]string, members map[string]config.Member, botChannel string) (sc *slackClient) {
+func CreateClient(secrets map[string]string, members map[string]config.Member, botChannel string,
+	c chan CommandInfo) (sc *slackClient) {
 	logFolder := logging.CreateLogFolder()
 	logFileInternal := logging.CreateLogFile(logFolder, "slack_internal")
 	slackLogger := logging.CreateNewLogger("slack", "slack")
@@ -91,6 +93,7 @@ func CreateClient(secrets map[string]string, members map[string]config.Member, b
 		logger:    slackLogger,
 		members:   members,
 		responses: getResponses(),
+		commander: c,
 	}
 	slackLogger.Info("Created Slack client.")
 	return sc
