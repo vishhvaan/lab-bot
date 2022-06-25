@@ -8,19 +8,17 @@ import (
 
 type cb func(*slackClient, *slackevents.AppMentionEvent, string)
 
-func getResponses() map[string]cb {
-	return map[string]cb{
-		"hello": hello, "hai": hello, "hey": hello,
-		"sup": hello, "hi": hello,
-		"bye": bye, "goodbye": bye, "tata": bye,
-		"sysinfo": sysinfo,
-	}
+var responses = map[string]cb{
+	"hello": hello, "hai": hello, "hey": hello,
+	"sup": hello, "hi": hello,
+	"bye": bye, "goodbye": bye, "tata": bye,
+	"sysinfo": sysinfo,
 }
 
 func (sc *slackClient) launchCB(ev *slackevents.AppMentionEvent) {
 	match, err := sc.textMatcher(ev.Text)
 	if err == "" {
-		f := sc.responses[match]
+		f := responses[match]
 		f(sc, ev, match)
 	} else if err == "no match found" {
 		sc.logger.Warn("No callback function found.")

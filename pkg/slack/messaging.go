@@ -103,7 +103,7 @@ func (sc *slackClient) textMatcher(message string) (match string, err string) {
 	message = strings.ToLower(message)
 	match = ""
 	err = "no match found"
-	for m := range sc.responses {
+	for m := range responses {
 		if strings.Contains(message, m) {
 			if match == "" {
 				match = m

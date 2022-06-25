@@ -20,7 +20,6 @@ type slackClient struct {
 	slackBot
 	logger    *log.Entry
 	members   map[string]config.Member
-	responses map[string]cb
 	commander chan CommandInfo
 }
 
@@ -92,7 +91,6 @@ func CreateClient(secrets map[string]string, members map[string]config.Member, b
 		},
 		logger:    slackLogger,
 		members:   members,
-		responses: getResponses(),
 		commander: c,
 	}
 	slackLogger.Info("Created Slack client.")
