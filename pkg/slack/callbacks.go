@@ -1,8 +1,6 @@
 package slack
 
 import (
-	"strings"
-
 	"github.com/slack-go/slack/slackevents"
 
 	"github.com/vishhvaan/lab-bot/pkg/functions"
@@ -30,34 +28,6 @@ func (sc *slackClient) launchCB(ev *slackevents.AppMentionEvent) {
 	} else {
 		sc.logger.Warn("Many callback functions found.")
 		sc.PostMessage(ev.Channel, "I can respond in multiple ways ...")
-	}
-}
-
-func (sc *slackClient) textMatcher(message string) (match string, err string) {
-	message = strings.ToLower(message)
-	match = ""
-	err = "no match found"
-	for m := range sc.responses {
-		if strings.Contains(message, m) {
-			if match == "" {
-				match = m
-				err = ""
-			} else {
-				return "", "multiple matches found"
-			}
-		}
-	}
-	return match, err
-}
-
-func onOffDetector(message string) (detected string) {
-	lm := strings.ToLower(message)
-	if strings.Contains(lm, " on") && !strings.Contains(lm, " off") {
-		return "on"
-	} else if strings.Contains(lm, " off") && !strings.Contains(lm, " on") {
-		return "off"
-	} else {
-		return "both"
 	}
 }
 
