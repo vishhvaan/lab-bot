@@ -6,7 +6,7 @@ import (
 	"github.com/vishhvaan/lab-bot/pkg/functions"
 )
 
-type cb func(*slackClient, *slackevents.AppMentionEvent, string)
+type cb func(*slackClient, *slackevents.AppMentionEvent, string, chan CommandInfo)
 
 func getResponses() map[string]cb {
 	return map[string]cb{
@@ -17,31 +17,46 @@ func getResponses() map[string]cb {
 	}
 }
 
-func (sc *slackClient) launchCB(ev *slackevents.AppMentionEvent) {
+func (sc *slackClient) launchCB(ev *slackevents.AppMentionEvent, c chan CommandInfo) {
 	match, err := sc.textMatcher(ev.Text)
 	if err == "" {
 		f := sc.responses[match]
-		f(sc, ev, match)
+		f(sc, ev, match, c)
 	} else if err == "no match found" {
 		sc.logger.Warn("No callback function found.")
-		sc.PostMessage(ev.Channel, "I'm not sure what you sayin")
+		sc.PostMessage(MessageInfo{
+			ChannelID: ev.Channel,
+			Text:      "I'm not sure what you sayin",
+		})
 	} else {
 		sc.logger.Warn("Many callback functions found.")
-		sc.PostMessage(ev.Channel, "I can respond in multiple ways ...")
+		sc.PostMessage(MessageInfo{
+			ChannelID: ev.Channel,
+			Text:      "I can respond in multiple ways ...",
+		})
 	}
 }
 
-func hello(sc *slackClient, ev *slackevents.AppMentionEvent, match string) {
+func hello(sc *slackClient, ev *slackevents.AppMentionEvent, match string, c chan CommandInfo) {
 	response := "Hello, " + sc.getUserName(ev.User) + "! :party_parrot:"
-	sc.PostMessage(ev.Channel, response)
+	sc.PostMessage(MessageInfo{
+		ChannelID: ev.Channel,
+		Text:      response,
+	})
 }
 
-func bye(sc *slackClient, ev *slackevents.AppMentionEvent, match string) {
+func bye(sc *slackClient, ev *slackevents.AppMentionEvent, match string, c chan CommandInfo) {
 	response := "Goodbye, " + sc.getUserName(ev.User) + "! :wave:"
-	sc.PostMessage(ev.Channel, response)
+	sc.PostMessage(MessageInfo{
+		ChannelID: ev.Channel,
+		Text:      response,
+	})
 }
 
-func sysinfo(sc *slackClient, ev *slackevents.AppMentionEvent, match string) {
+func sysinfo(sc *slackClient, ev *slackevents.AppMentionEvent, match string, c chan CommandInfo) {
 	response := functions.GetSysInfo()
-	sc.PostMessage(ev.Channel, response)
+	sc.PostMessage(MessageInfo{
+		ChannelID: ev.Channel,
+		Text:      response,
+	})
 }

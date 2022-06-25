@@ -5,6 +5,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/vishhvaan/lab-bot/pkg/logging"
+	"github.com/vishhvaan/lab-bot/pkg/slack"
 )
 
 /*
@@ -27,10 +28,11 @@ check and rewrite file and map
 */
 
 type labJob struct {
-	name   string
-	status bool
-	desc   string
-	logger *log.Entry
+	name      string
+	status    bool
+	desc      string
+	logger    *log.Entry
+	messenger chan slack.MessageInfo
 	job
 }
 
@@ -38,6 +40,7 @@ type job interface {
 	init()
 	enable()
 	disable()
+	commandProcessor()
 }
 
 type controllerJob struct {
@@ -51,20 +54,27 @@ type controller interface {
 	init()
 	turnOn()
 	turnOff()
+	commandProcessor()
 }
 
 type JobHandler struct {
-	jobs   []job
+	jobs   map[string]job
 	logger *log.Entry
 }
 
-func CreateHandler() (jh *JobHandler) {
-	var jobs []job
+func CreateHandler(m chan slack.MessageInfo) (jh *JobHandler) {
+	var jobs map[string]job
 	jobLogger := logging.CreateNewLogger("jobhandler", "jobhandler")
 
 	return &JobHandler{
 		jobs:   jobs,
 		logger: jobLogger,
+	}
+}
+
+func (jh *JobHandler) CommandReciever(c chan slack.CommandInfo) {
+	for command := range c {
+		jh.jobs[command.Match].commandProcessor()
 	}
 }
 

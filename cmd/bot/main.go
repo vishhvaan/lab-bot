@@ -9,6 +9,7 @@ import (
 
 	"github.com/vishhvaan/lab-bot/pkg/config"
 	"github.com/vishhvaan/lab-bot/pkg/files"
+	"github.com/vishhvaan/lab-bot/pkg/jobs"
 	"github.com/vishhvaan/lab-bot/pkg/logging"
 	"github.com/vishhvaan/lab-bot/pkg/slack"
 )
@@ -42,7 +43,14 @@ func main() {
 	secrets := config.ParseSecrets(secretsFile)
 	slack.CheckSecrets(secrets)
 
+	messages := make(chan slack.MessageInfo)
+	commands := make(chan slack.CommandInfo)
+
 	slackClient := slack.CreateClient(secrets, members, botChannel)
-	go slackClient.EventProcessor()
-	slackClient.RunSocketMode()
+	go slackClient.MessageProcessor(messages)
+	go slackClient.EventProcessor(commands)
+	go slackClient.RunSocketMode()
+
+	jobHandler := jobs.CreateHandler(messages)
+	jobHandler.CommandReciever(commands)
 }
