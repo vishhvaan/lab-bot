@@ -1,7 +1,7 @@
 package jobs
 
 import (
-	"github.com/go-co-op/gocron"
+	// "github.com/go-co-op/gocron"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/vishhvaan/lab-bot/pkg/logging"
@@ -27,32 +27,37 @@ check and rewrite file and map
 */
 
 type labJob struct {
-	name      string
-	status    string
-	desc      string
-	frequency string
-	sched     *gocron.Scheduler
-	logger    *log.Entry
+	name   string
+	status bool
+	desc   string
+	logger *log.Entry
+	job
+}
+
+type job interface {
+	init()
+}
+
+type controllerJob struct {
+	labJob
+	powerStatus bool
+	controller
+	logger *log.Entry
+}
+
+type controller interface {
+	turnOn()
+	turnOff()
 }
 
 type jobHandler struct {
-	techRemind *labJob
-	logger     *log.Entry
-}
-
-func (lj labJob) initJob(name string, logger *log.Entry) {
-	lj.name = name
-	lj.logger = logger.WithField("job", name)
+	logger *log.Entry
 }
 
 func CreateHandler() (jh *jobHandler) {
 	jobLogger := logging.CreateNewLogger("jobhandler", "jobhandler")
 
-	var tr labJob
-	tr.initJob("techremind", jobLogger)
-
 	return &jobHandler{
-		techRemind: &tr,
-		logger:     jobLogger,
+		logger: jobLogger,
 	}
 }
