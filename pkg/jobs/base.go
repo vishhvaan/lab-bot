@@ -2,6 +2,8 @@ package jobs
 
 import (
 	// "github.com/go-co-op/gocron"
+	"errors"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/slack-go/slack/slackevents"
 
@@ -46,15 +48,20 @@ type job interface {
 
 type controllerJob struct {
 	labJob
+	machineName string
 	powerStatus bool
+	customInit  func() (err error)
+	customOn    func() (err error)
+	customOff   func() (err error)
+	logger      *log.Entry
 	controller
-	logger *log.Entry
 }
 
 type controller interface {
 	init()
-	turnOn()
-	turnOff()
+	turnOn(ev *slackevents.AppMentionEvent)
+	turnOff(ev *slackevents.AppMentionEvent)
+	getPowerStatus(ev *slackevents.AppMentionEvent)
 	commandProcessor(ev *slackevents.AppMentionEvent)
 }
 
@@ -74,15 +81,12 @@ func CreateHandler(m chan slack.MessageInfo) (jh *JobHandler) {
 	}
 }
 
-type ci func(job)
-
-var customInit = map[string]ci{}
-
 func (jh *JobHandler) InitJobs() {
 	for job := range jh.jobs {
 		jh.jobs[job].init()
-		if f, pres := customInit[job]; pres {
-			f(jh.jobs[job])
+		switch j := jh.jobs[job].(type) {
+		case *controllerJob:
+			j.customInit()
 		}
 	}
 }
@@ -102,12 +106,91 @@ func (lj *labJob) init() {
 
 func (lj *labJob) enable() {
 	lj.status = true
+	lj.logger.Info("Enabled job " + lj.name)
 }
 
 func (lj *labJob) disable() {
 	lj.status = false
+	lj.logger.Info("Disabled job " + lj.name)
 }
+
+type action func(ev *slackevents.AppMentionEvent)
+
+func (lj *labJob) commandProcessor(ev *slackevents.AppMentionEvent) {}
 
 func (cj *controllerJob) init() {
 	cj.labJob.init()
+}
+
+func (cj *controllerJob) turnOn(ev *slackevents.AppMentionEvent) {
+	err := cj.customOn()
+	cj.slackPowerResponse(true, err, ev)
+}
+
+func (cj *controllerJob) turnOff(ev *slackevents.AppMentionEvent) {
+	err := cj.customOff()
+	cj.slackPowerResponse(false, err, ev)
+}
+
+func (cj *controllerJob) slackPowerResponse(status bool, err error, ev *slackevents.AppMentionEvent) {
+	statusString := "off"
+	if status {
+		statusString = "on"
+	}
+	if err != nil {
+		message := "Couldn't turn " + statusString + " " + cj.machineName
+		cj.logger.Error(message)
+		cj.messenger <- slack.MessageInfo{
+			Text: message,
+		}
+	} else {
+		cj.powerStatus = status
+		message := "Turned " + statusString + " " + cj.machineName
+		cj.logger.Info(message)
+		cj.messenger <- slack.MessageInfo{
+			Type:      "react",
+			Timestamp: ev.TimeStamp,
+			Text:      "ok_hand",
+		}
+		cj.messenger <- slack.MessageInfo{
+			Text: message,
+		}
+	}
+}
+
+func (cj *controllerJob) getPowerStatus(ev *slackevents.AppMentionEvent) {
+	message := "The " + cj.machineName + " is *off*"
+	if cj.powerStatus {
+		message = "The " + cj.machineName + " is *on*"
+	}
+	cj.messenger <- slack.MessageInfo{
+		ChannelID: ev.Channel,
+		Text:      message,
+	}
+}
+
+func (cj *controllerJob) commandProcessor(ev *slackevents.AppMentionEvent) {
+	controllerActions := map[string]action{
+		"on":     cj.turnOn,
+		"off":    cj.turnOff,
+		"status": cj.getPowerStatus,
+	}
+	k := slack.GetKeys(controllerActions)
+	match, err := slack.TextMatcher(ev.Text, k)
+	if err == nil {
+		f := controllerActions[match]
+		f(ev)
+	} else if err == errors.New("no match found") {
+		cj.logger.Warn("No callback function found.")
+		cj.messenger <- slack.MessageInfo{
+			ChannelID: ev.Channel,
+			Text:      "I'm not sure what you sayin",
+		}
+	} else {
+		cj.logger.Warn("Many callback functions found.")
+		cj.messenger <- slack.MessageInfo{
+			ChannelID: ev.Channel,
+			Text:      "I can respond in multiple ways ...",
+		}
+	}
 }

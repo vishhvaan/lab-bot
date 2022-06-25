@@ -99,21 +99,29 @@ func (sc *slackClient) MsgReact(i MessageInfo) {
 	}
 }
 
-func (sc *slackClient) textMatcher(message string) (match string, err string) {
+func TextMatcher(message string, possibilities []string) (match string, err error) {
 	message = strings.ToLower(message)
 	match = ""
-	err = "no match found"
-	for m := range responses {
+	err = errors.New("no match found")
+	for _, m := range possibilities {
 		if strings.Contains(message, m) {
 			if match == "" {
 				match = m
-				err = ""
+				err = nil
 			} else {
-				return "", "multiple matches found"
+				return "", errors.New("multiple matches found")
 			}
 		}
 	}
 	return match, err
+}
+
+func GetKeys[K comparable, V any](m map[K]V) []K {
+	keys := make([]K, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 func OnOffDetector(message string) (detected string) {

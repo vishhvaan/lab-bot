@@ -1,6 +1,8 @@
 package slack
 
 import (
+	"errors"
+
 	"github.com/slack-go/slack/slackevents"
 
 	"github.com/vishhvaan/lab-bot/pkg/functions"
@@ -16,11 +18,11 @@ var responses = map[string]cb{
 }
 
 func (sc *slackClient) launchCB(ev *slackevents.AppMentionEvent) {
-	match, err := sc.textMatcher(ev.Text)
-	if err == "" {
+	match, err := TextMatcher(ev.Text, GetKeys(responses))
+	if err == nil {
 		f := responses[match]
 		f(sc, ev, match)
-	} else if err == "no match found" {
+	} else if err == errors.New("no match found") {
 		sc.logger.Warn("No callback function found.")
 		sc.PostMessage(MessageInfo{
 			ChannelID: ev.Channel,
