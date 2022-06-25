@@ -50,14 +50,14 @@ type controller interface {
 	turnOff()
 }
 
-type jobHandler struct {
+type JobHandler struct {
 	logger *log.Entry
 }
 
-func CreateHandler() (jh *jobHandler) {
+func CreateHandler() (jh *JobHandler) {
 	jobLogger := logging.CreateNewLogger("jobhandler", "jobhandler")
 
-	return &jobHandler{
+	return &JobHandler{
 		logger: jobLogger,
 	}
 }
