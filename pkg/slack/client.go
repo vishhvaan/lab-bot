@@ -24,9 +24,9 @@ type slackClient struct {
 }
 
 type slackBot struct {
-	bot        *goslack.Bot
-	botID      string
-	botChannel string
+	bot          *goslack.Bot
+	botID        string
+	botChannelID string
 }
 
 func CreateClient(secrets map[string]string, members map[string]config.Member, botChannel string) (sc *slackClient) {
@@ -84,9 +84,9 @@ func CreateClient(secrets map[string]string, members map[string]config.Member, b
 		api:    api,
 		client: client,
 		slackBot: slackBot{
-			bot:        bot,
-			botID:      botID,
-			botChannel: botChannelID,
+			bot:          bot,
+			botID:        botID,
+			botChannelID: botChannelID,
 		},
 		logger:    slackLogger,
 		members:   members,
