@@ -73,6 +73,12 @@ func CreateHandler(m chan slack.MessageInfo) (jh *JobHandler) {
 	}
 }
 
+func (jh *JobHandler) InitJobs() {
+	for job := range jh.jobs {
+		jh.jobs[job].init()
+	}
+}
+
 func (jh *JobHandler) CommandReciever(c chan slack.CommandInfo) {
 	for command := range c {
 		jh.jobs[command.Match].commandProcessor(command.Event)

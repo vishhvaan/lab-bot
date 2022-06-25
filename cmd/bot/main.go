@@ -52,5 +52,6 @@ func main() {
 	go slackClient.RunSocketMode()
 
 	jobHandler := jobs.CreateHandler(messages)
+	jobHandler.InitJobs()
 	jobHandler.CommandReciever(commands)
 }
