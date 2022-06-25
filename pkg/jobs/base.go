@@ -54,12 +54,12 @@ type controller interface {
 }
 
 type JobHandler struct {
-	jobs   []*job
+	jobs   []job
 	logger *log.Entry
 }
 
 func CreateHandler() (jh *JobHandler) {
-	var jobs []*job
+	var jobs []job
 	jobLogger := logging.CreateNewLogger("jobhandler", "jobhandler")
 
 	return &JobHandler{
@@ -70,6 +70,14 @@ func CreateHandler() (jh *JobHandler) {
 
 func (lj *labJob) init() {
 	lj.status = true
+}
+
+func (lj *labJob) enable() {
+	lj.status = true
+}
+
+func (lj *labJob) disable() {
+	lj.status = false
 }
 
 func (cj *controllerJob) init() {
