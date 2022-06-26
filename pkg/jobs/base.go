@@ -138,13 +138,31 @@ func (cj *controllerJob) init() {
 }
 
 func (cj *controllerJob) turnOn(ev *slackevents.AppMentionEvent) {
-	err := cj.customOn()
-	cj.slackPowerResponse(true, err, ev)
+	if cj.powerStatus {
+		message := "The " + cj.machineName + " is already on"
+		cj.logger.Info(message)
+		cj.messenger <- slack.MessageInfo{
+			Text:      message,
+			ChannelID: ev.Channel,
+		}
+	} else {
+		err := cj.customOn()
+		cj.slackPowerResponse(true, err, ev)
+	}
 }
 
 func (cj *controllerJob) turnOff(ev *slackevents.AppMentionEvent) {
-	err := cj.customOff()
-	cj.slackPowerResponse(false, err, ev)
+	if !cj.powerStatus {
+		message := "The " + cj.machineName + " is already off"
+		cj.logger.Info(message)
+		cj.messenger <- slack.MessageInfo{
+			Text:      message,
+			ChannelID: ev.Channel,
+		}
+	} else {
+		err := cj.customOff()
+		cj.slackPowerResponse(false, err, ev)
+	}
 }
 
 func (cj *controllerJob) slackPowerResponse(status bool, err error, ev *slackevents.AppMentionEvent) {
