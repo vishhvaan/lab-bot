@@ -106,17 +106,16 @@ func (cj *controllerJob) slackPowerResponse(status bool, err error, ev *slackeve
 }
 
 func (cj *controllerJob) getPowerStatus(ev *slackevents.AppMentionEvent) {
-	var s strings.Builder
-	s.WriteString("The " + cj.machineName + " is ")
+	message := "The " + cj.machineName + " is "
 	if cj.powerStatus {
 		uptime := time.Now().Sub(cj.lastPowerOn)
-		s.WriteString("*on* ; Uptime: " + fmt.Sprint(uptime))
+		message += "*on* ; Uptime: " + fmt.Sprint(uptime)
 	} else {
-		s.WriteString("*off*")
+		message += "*off*"
 	}
 	cj.messenger <- slack.MessageInfo{
 		ChannelID: ev.Channel,
-		Text:      s.String(),
+		Text:      message,
 	}
 }
 
