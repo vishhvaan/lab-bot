@@ -51,6 +51,16 @@ func CreateClient(secrets map[string]string, members map[string]config.Member, b
 		socketmode.OptionLog(stdlog.New(logFileInternal, "socketmode: ", stdlog.Lshortfile|stdlog.LstdFlags)),
 	)
 
+	r, err := api.AuthTest()
+	if err != nil {
+		slackLogger.WithField("err", err).Fatal("Slack connection test failed.")
+	}
+	bot, err := api.GetBotInfo(r.BotID)
+	if err != nil {
+		slackLogger.WithField("err", err).Fatal("Couldn't find bot with ID.")
+	}
+	slackLogger.Info(fmt.Sprintf("%s has a bot ID of %s", bot.Name, bot.ID))
+
 	currentTime := time.Now()
 	hn, err := os.Hostname()
 	if err != nil {
@@ -67,26 +77,11 @@ func CreateClient(secrets map[string]string, members map[string]config.Member, b
 		}).Info("Sent startup message to Slack.")
 	}
 
-	r, err := api.GetConversationHistory(&goslack.GetConversationHistoryParameters{
-		ChannelID: botChannelID,
-		Limit:     1,
-	})
-	if err != nil {
-		slackLogger.WithField("err", err).Fatal("Couldn't get history of message on the lab bot channel.")
-	}
-	botID := r.Messages[0].BotID
-	bot, err := api.GetBotInfo(botID)
-	if err != nil {
-		slackLogger.WithField("err", err).Fatal("Couldn't find bot with ID.")
-	}
-	slackLogger.Info(fmt.Sprintf("%s has a bot ID of %s", bot.Name, botID))
-
 	sc = &slackClient{
 		api:    api,
 		client: client,
 		slackBot: slackBot{
 			bot:          bot,
-			botID:        botID,
 			botChannelID: botChannelID,
 		},
 		logger:    slackLogger,
