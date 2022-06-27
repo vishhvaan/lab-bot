@@ -1,12 +1,17 @@
 package slack
 
 import (
+	"strings"
+
 	"github.com/slack-go/slack/slackevents"
 
 	"github.com/vishhvaan/lab-bot/pkg/functions"
 )
 
-type cb func(*slackClient, *slackevents.AppMentionEvent, string)
+func (sc *slackClient) commandInterpreter(ev *slackevents.AppMentionEvent) {
+
+	fields := strings.Fields(ev.Text)
+}
 
 var responses = map[string]cb{
 	"hello": hello, "hai": hello, "hey": hello,
@@ -15,7 +20,9 @@ var responses = map[string]cb{
 	"sysinfo": sysinfo,
 }
 
-func (sc *slackClient) launchCB(ev *slackevents.AppMentionEvent) {
+type cb func(*slackClient, *slackevents.AppMentionEvent, string)
+
+func (sc *slackClient) launchBasicCB(ev *slackevents.AppMentionEvent) {
 	match, err := TextMatcher(ev.Text, GetKeys(responses))
 	if err == nil {
 		f := responses[match]

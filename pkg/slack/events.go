@@ -49,5 +49,5 @@ func (sc *slackClient) appMentionSubprocessor(ev *slackevents.AppMentionEvent) {
 		"channel": sc.getChannelName(ev.Channel),
 		"user":    sc.getUserName(ev.User),
 	}).Info("App mentioned.")
-	sc.launchCB(ev)
+	sc.commandInterpreter(ev)
 }

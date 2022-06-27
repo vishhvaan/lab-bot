@@ -3,8 +3,8 @@ package slack
 import "github.com/slack-go/slack/slackevents"
 
 type CommandInfo struct {
-	Match string
-	Event *slackevents.AppMentionEvent
+	Fields []string
+	Event  *slackevents.AppMentionEvent
 }
 
 func (sc *slackClient) RunSocketMode() {
