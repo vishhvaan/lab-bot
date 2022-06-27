@@ -140,7 +140,7 @@ func (cj *controllerJob) init() {
 func (cj *controllerJob) turnOn(ev *slackevents.AppMentionEvent) {
 	if cj.powerStatus {
 		message := "The " + cj.machineName + " is already on"
-		cj.logger.Info(message)
+		go cj.logger.Info(message)
 		cj.messenger <- slack.MessageInfo{
 			Text:      message,
 			ChannelID: ev.Channel,
@@ -154,7 +154,7 @@ func (cj *controllerJob) turnOn(ev *slackevents.AppMentionEvent) {
 func (cj *controllerJob) turnOff(ev *slackevents.AppMentionEvent) {
 	if !cj.powerStatus {
 		message := "The " + cj.machineName + " is already off"
-		cj.logger.Info(message)
+		go cj.logger.Info(message)
 		cj.messenger <- slack.MessageInfo{
 			Text:      message,
 			ChannelID: ev.Channel,
@@ -172,14 +172,14 @@ func (cj *controllerJob) slackPowerResponse(status bool, err error, ev *slackeve
 	}
 	if err != nil {
 		message := "Couldn't turn " + statusString + " the " + cj.machineName
-		cj.logger.WithField("err", err).Error(message)
+		go cj.logger.WithField("err", err).Error(message)
 		cj.messenger <- slack.MessageInfo{
 			Text: message,
 		}
 	} else {
 		cj.powerStatus = status
 		message := "Turned " + statusString + " the " + cj.machineName
-		cj.logger.Info(message)
+		go cj.logger.Info(message)
 		cj.messenger <- slack.MessageInfo{
 			Type:      "react",
 			Timestamp: ev.TimeStamp,
@@ -217,13 +217,13 @@ func (cj *controllerJob) commandProcessor(c slack.CommandInfo) {
 			f := controllerActions[match]
 			f(c.Event)
 		} else if err.Error() == "no match found" {
-			cj.logger.WithField("err", err).Warn("No callback function found.")
+			go cj.logger.WithField("err", err).Warn("No callback function found.")
 			cj.messenger <- slack.MessageInfo{
 				ChannelID: c.Event.Channel,
 				Text:      "I'm not sure what you sayin",
 			}
 		} else {
-			cj.logger.WithField("err", err).Warn("Many callback functions found.")
+			go cj.logger.WithField("err", err).Warn("Many callback functions found.")
 			cj.messenger <- slack.MessageInfo{
 				ChannelID: c.Event.Channel,
 				Text:      "I can respond in multiple ways ...",
