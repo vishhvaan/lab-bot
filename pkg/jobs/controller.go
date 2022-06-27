@@ -1,7 +1,9 @@
 package jobs
 
 import (
+	"fmt"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/slack-go/slack/slackevents"
@@ -13,6 +15,7 @@ type controllerJob struct {
 	labJob
 	machineName string
 	powerStatus bool
+	lastPowerOn time.Time
 	device      any
 	customInit  func() (err error)
 	customOn    func() (err error)
@@ -56,6 +59,7 @@ func (cj *controllerJob) turnOn(ev *slackevents.AppMentionEvent) {
 		}
 	} else {
 		err := cj.customOn()
+		cj.lastPowerOn = time.Now()
 		cj.slackPowerResponse(true, err, ev)
 	}
 }
@@ -102,13 +106,17 @@ func (cj *controllerJob) slackPowerResponse(status bool, err error, ev *slackeve
 }
 
 func (cj *controllerJob) getPowerStatus(ev *slackevents.AppMentionEvent) {
-	message := "The " + cj.machineName + " is *off*"
+	var s strings.Builder
+	s.WriteString("The " + cj.machineName + " is ")
 	if cj.powerStatus {
-		message = "The " + cj.machineName + " is *on*"
+		uptime := time.Now().Sub(cj.lastPowerOn)
+		s.WriteString("*on* ; Uptime: " + fmt.Sprint(uptime))
+	} else {
+		s.WriteString("*off*")
 	}
 	cj.messenger <- slack.MessageInfo{
 		ChannelID: ev.Channel,
-		Text:      message,
+		Text:      s.String(),
 	}
 }
 
