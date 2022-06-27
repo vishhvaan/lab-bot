@@ -123,14 +123,3 @@ func GetKeys[K comparable, V any](m map[K]V) []K {
 	}
 	return keys
 }
-
-func OnOffDetector(message string) (detected string) {
-	lm := strings.ToLower(message)
-	if strings.Contains(lm, " on") && !strings.Contains(lm, " off") {
-		return "on"
-	} else if strings.Contains(lm, " off") && !strings.Contains(lm, " on") {
-		return "off"
-	} else {
-		return "both"
-	}
-}
