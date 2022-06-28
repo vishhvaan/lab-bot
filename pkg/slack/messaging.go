@@ -2,7 +2,6 @@ package slack
 
 import (
 	"errors"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 	goslack "github.com/slack-go/slack"
@@ -99,21 +98,13 @@ func (sc *slackClient) MsgReact(i MessageInfo) {
 	}
 }
 
-func TextMatcher(message string, possibilities []string) (match string, err error) {
-	message = strings.ToLower(message)
-	match = ""
-	err = errors.New("no match found")
-	for _, m := range possibilities {
-		if strings.Contains(message, m) {
-			if match == "" {
-				match = m
-				err = nil
-			} else {
-				return "", errors.New("multiple matches found")
-			}
+func contains(elems []string, v string) bool {
+	for _, s := range elems {
+		if v == s {
+			return true
 		}
 	}
-	return match, err
+	return false
 }
 
 func GetKeys[K comparable, V any](m map[K]V) []K {

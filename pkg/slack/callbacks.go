@@ -9,11 +9,18 @@ import (
 )
 
 func (sc *slackClient) commandInterpreter(ev *slackevents.AppMentionEvent) {
-
-	fields := strings.Fields(ev.Text)
+	noUID := strings.ReplaceAll(ev.Text, "<@"+sc.bot.UserID+">", "")
+	fields := strings.Fields(noUID)
+	if len(fields) == 0 {
+		sc.logger.Info("Bot simply mentioned, responding with hello")
+		hello(sc, ev, "")
+	} else {
+		command := strings.ToLower(fields[0])
+		if contains(GetKeys(basicResponses), command)
+	}
 }
 
-var responses = map[string]cb{
+var basicResponses = map[string]cb{
 	"hello": hello, "hai": hello, "hey": hello,
 	"sup": hello, "hi": hello,
 	"bye": bye, "goodbye": bye, "tata": bye,

@@ -25,7 +25,6 @@ type slackClient struct {
 
 type slackBot struct {
 	bot          *goslack.Bot
-	botID        string
 	botChannelID string
 }
 
