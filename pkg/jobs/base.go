@@ -35,8 +35,12 @@ type labJob struct {
 	desc      string
 	logger    *log.Entry
 	messenger chan slack.MessageInfo
+	keyword string
+	responses map[string]action
 	job
 }
+
+type action func(ev *slackevents.AppMentionEvent)
 
 type job interface {
 	init()
@@ -73,6 +77,8 @@ func (jh *JobHandler) InitJobs() {
 
 func (jh *JobHandler) CommandReciever(c chan slack.CommandInfo) {
 	for command := range c {
+		command := strings.ToLower(fields[0])
+		if functions.Contains(functions.GetKeys(basicResponses), command) {
 		jh.jobs[command.Match].commandProcessor(command)
 	}
 }
@@ -93,7 +99,5 @@ func (lj *labJob) disable() {
 	lj.status = false
 	lj.logger.Info("Disabled job " + lj.name)
 }
-
-type action func(ev *slackevents.AppMentionEvent)
 
 func (lj *labJob) commandProcessor(c slack.CommandInfo) {}
