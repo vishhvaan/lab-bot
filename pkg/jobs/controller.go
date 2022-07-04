@@ -113,8 +113,8 @@ func (cj *controllerJob) getPowerStatus(c slack.CommandInfo) {
 	if commandCheck(c, 2, cj.messenger, cj.logger) {
 		message := "The " + cj.machineName + " is "
 		if cj.powerStatus {
-			uptime := time.Now().Sub(cj.lastPowerOn)
-			message += "*on* ; Uptime: " + fmt.Sprint(uptime)
+			uptime := time.Since(cj.lastPowerOn).Round(time.Second)
+			message += "*on*\nUptime: " + fmt.Sprint(uptime)
 		} else {
 			message += "*off*"
 		}
@@ -132,18 +132,20 @@ func (cj *controllerJob) commandProcessor(c slack.CommandInfo) {
 			"off":    cj.turnOff,
 			"status": cj.getPowerStatus,
 		}
-		k := functions.GetKeys(controllerActions)
-		subcommand := strings.ToLower(c.Fields[1])
 		if len(c.Fields) == 1 {
 			cj.getPowerStatus(c)
-		} else if functions.Contains(k, subcommand) {
-			f := controllerActions[subcommand]
-			f(c)
 		} else {
-			go cj.logger.WithField("fields", c.Fields).Warn("No callback function found.")
-			cj.messenger <- slack.MessageInfo{
-				ChannelID: c.Event.Channel,
-				Text:      "I'm not sure what you sayin",
+			k := functions.GetKeys(controllerActions)
+			subcommand := strings.ToLower(c.Fields[1])
+			if functions.Contains(k, subcommand) {
+				f := controllerActions[subcommand]
+				f(c)
+			} else {
+				go cj.logger.WithField("fields", c.Fields).Warn("No callback function found.")
+				cj.messenger <- slack.MessageInfo{
+					ChannelID: c.Event.Channel,
+					Text:      "I'm not sure what you sayin",
+				}
 			}
 		}
 	} else {
