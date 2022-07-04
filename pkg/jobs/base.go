@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/slack-go/slack/slackevents"
 
 	"github.com/vishhvaan/lab-bot/pkg/logging"
 	"github.com/vishhvaan/lab-bot/pkg/slack"
@@ -37,12 +36,11 @@ type labJob struct {
 	desc      string
 	logger    *log.Entry
 	messenger chan slack.MessageInfo
-	keyword   string
 	responses map[string]action
 	job
 }
 
-type action func(ev *slackevents.AppMentionEvent)
+type action func(c slack.CommandInfo)
 
 type job interface {
 	init()
@@ -52,9 +50,9 @@ type job interface {
 }
 
 type JobHandler struct {
-	jobs   map[string]job
+	jobs      map[string]job
 	messenger chan slack.MessageInfo
-	logger *log.Entry
+	logger    *log.Entry
 }
 
 func CreateHandler(m chan slack.MessageInfo) (jh *JobHandler) {
@@ -63,9 +61,9 @@ func CreateHandler(m chan slack.MessageInfo) (jh *JobHandler) {
 	jobLogger := logging.CreateNewLogger("jobhandler", "jobhandler")
 
 	return &JobHandler{
-		jobs:   jobs,
+		jobs:      jobs,
 		messenger: m,
-		logger: jobLogger,
+		logger:    jobLogger,
 	}
 }
 
@@ -81,19 +79,18 @@ func (jh *JobHandler) InitJobs() {
 
 func (jh *JobHandler) CommandReciever(c chan slack.CommandInfo) {
 	for command := range c {
-		k := strings.ToLower(fields[0])
+		k := strings.ToLower(command.Fields[0])
 		for job := range jh.jobs {
-			if jh.jobs[job].keyword == k {
-				jh.jobs[job].commandProcessor(command.Event)
+			if job == k {
+				jh.jobs[job].commandProcessor(command)
 				return
 			}
 		}
 		jh.messenger <- slack.MessageInfo{
-			Text: "Couldn't find a response to your command.",
-			ChannelID: c.Event.Text,
+			Text:      "I couldn't find a response to your command.",
+			ChannelID: command.Event.Text,
 		}
 	}
-
 }
 
 func (lj *labJob) init() {

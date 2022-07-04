@@ -2,12 +2,12 @@ package jobs
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/slack-go/slack/slackevents"
 
+	"github.com/vishhvaan/lab-bot/pkg/functions"
 	"github.com/vishhvaan/lab-bot/pkg/slack"
 )
 
@@ -26,9 +26,9 @@ type controllerJob struct {
 
 type controller interface {
 	init()
-	turnOn(ev *slackevents.AppMentionEvent)
-	turnOff(ev *slackevents.AppMentionEvent)
-	getPowerStatus(ev *slackevents.AppMentionEvent)
+	turnOn(c slack.CommandInfo)
+	turnOff(c slack.CommandInfo)
+	getPowerStatus(c slack.CommandInfo)
 	commandProcessor(c slack.CommandInfo)
 }
 
@@ -46,35 +46,52 @@ func (cj *controllerJob) init() {
 	cj.messenger <- slack.MessageInfo{
 		Text: message,
 	}
-
 }
 
-func (cj *controllerJob) turnOn(ev *slackevents.AppMentionEvent) {
-	if cj.powerStatus {
-		message := "The " + cj.machineName + " is already on"
+func (cj *controllerJob) commandCheck(c slack.CommandInfo, length int) bool {
+	if len(c.Fields) > length {
+		message := "Your command has parameters than necessary"
 		go cj.logger.Info(message)
 		cj.messenger <- slack.MessageInfo{
 			Text:      message,
-			ChannelID: ev.Channel,
+			ChannelID: c.Event.Channel,
 		}
+		return false
 	} else {
-		err := cj.customOn()
-		cj.lastPowerOn = time.Now()
-		cj.slackPowerResponse(true, err, ev)
+		return true
 	}
 }
 
-func (cj *controllerJob) turnOff(ev *slackevents.AppMentionEvent) {
-	if !cj.powerStatus {
-		message := "The " + cj.machineName + " is already off"
-		go cj.logger.Info(message)
-		cj.messenger <- slack.MessageInfo{
-			Text:      message,
-			ChannelID: ev.Channel,
+func (cj *controllerJob) turnOn(c slack.CommandInfo) {
+	if cj.commandCheck(c, 2) {
+		if cj.powerStatus {
+			message := "The " + cj.machineName + " is already on"
+			go cj.logger.Info(message)
+			cj.messenger <- slack.MessageInfo{
+				Text:      message,
+				ChannelID: c.Event.Channel,
+			}
+		} else {
+			err := cj.customOn()
+			cj.lastPowerOn = time.Now()
+			cj.slackPowerResponse(true, err, c.Event)
 		}
-	} else {
-		err := cj.customOff()
-		cj.slackPowerResponse(false, err, ev)
+	}
+}
+
+func (cj *controllerJob) turnOff(c slack.CommandInfo) {
+	if cj.commandCheck(c, 2) {
+		if !cj.powerStatus {
+			message := "The " + cj.machineName + " is already off"
+			go cj.logger.Info(message)
+			cj.messenger <- slack.MessageInfo{
+				Text:      message,
+				ChannelID: c.Event.Channel,
+			}
+		} else {
+			err := cj.customOff()
+			cj.slackPowerResponse(false, err, c.Event)
+		}
 	}
 }
 
@@ -105,44 +122,40 @@ func (cj *controllerJob) slackPowerResponse(status bool, err error, ev *slackeve
 	}
 }
 
-func (cj *controllerJob) getPowerStatus(ev *slackevents.AppMentionEvent) {
-	message := "The " + cj.machineName + " is "
-	if cj.powerStatus {
-		uptime := time.Now().Sub(cj.lastPowerOn)
-		message += "*on* ; Uptime: " + fmt.Sprint(uptime)
-	} else {
-		message += "*off*"
-	}
-	cj.messenger <- slack.MessageInfo{
-		ChannelID: ev.Channel,
-		Text:      message,
+func (cj *controllerJob) getPowerStatus(c slack.CommandInfo) {
+	if cj.commandCheck(c, 2) {
+		message := "The " + cj.machineName + " is "
+		if cj.powerStatus {
+			uptime := time.Now().Sub(cj.lastPowerOn)
+			message += "*on* ; Uptime: " + fmt.Sprint(uptime)
+		} else {
+			message += "*off*"
+		}
+		cj.messenger <- slack.MessageInfo{
+			ChannelID: c.Event.Channel,
+			Text:      message,
+		}
 	}
 }
 
 func (cj *controllerJob) commandProcessor(c slack.CommandInfo) {
 	if cj.status {
-		cropText := strings.ReplaceAll(c.Event.Text, c.Match, "")
 		controllerActions := map[string]action{
 			"on":     cj.turnOn,
 			"off":    cj.turnOff,
 			"status": cj.getPowerStatus,
 		}
-		k := slack.GetKeys(controllerActions)
-		match, err := slack.TextMatcher(cropText, k)
-		if err == nil {
-			f := controllerActions[match]
-			f(c.Event)
-		} else if err.Error() == "no match found" {
-			go cj.logger.WithField("err", err).Warn("No callback function found.")
+		k := functions.GetKeys(controllerActions)
+		if len(c.Fields) == 1 {
+			cj.getPowerStatus(c)
+		} else if functions.Contains(k, c.Fields[1]) {
+			f := controllerActions[c.Fields[1]]
+			f(c)
+		} else {
+			go cj.logger.WithField("fields", c.Fields).Warn("No callback function found.")
 			cj.messenger <- slack.MessageInfo{
 				ChannelID: c.Event.Channel,
 				Text:      "I'm not sure what you sayin",
-			}
-		} else {
-			go cj.logger.WithField("err", err).Warn("Many callback functions found.")
-			cj.messenger <- slack.MessageInfo{
-				ChannelID: c.Event.Channel,
-				Text:      "I can respond in multiple ways ...",
 			}
 		}
 	} else {
