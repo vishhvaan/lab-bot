@@ -3,6 +3,8 @@ package jobs
 import (
 	// "github.com/go-co-op/gocron"
 
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/slack-go/slack/slackevents"
 
@@ -35,7 +37,7 @@ type labJob struct {
 	desc      string
 	logger    *log.Entry
 	messenger chan slack.MessageInfo
-	keyword string
+	keyword   string
 	responses map[string]action
 	job
 }
@@ -51,6 +53,7 @@ type job interface {
 
 type JobHandler struct {
 	jobs   map[string]job
+	messenger chan slack.MessageInfo
 	logger *log.Entry
 }
 
@@ -61,6 +64,7 @@ func CreateHandler(m chan slack.MessageInfo) (jh *JobHandler) {
 
 	return &JobHandler{
 		jobs:   jobs,
+		messenger: m,
 		logger: jobLogger,
 	}
 }
@@ -77,10 +81,19 @@ func (jh *JobHandler) InitJobs() {
 
 func (jh *JobHandler) CommandReciever(c chan slack.CommandInfo) {
 	for command := range c {
-		command := strings.ToLower(fields[0])
-		if functions.Contains(functions.GetKeys(basicResponses), command) {
-		jh.jobs[command.Match].commandProcessor(command)
+		k := strings.ToLower(fields[0])
+		for job := range jh.jobs {
+			if jh.jobs[job].keyword == k {
+				jh.jobs[job].commandProcessor(command.Event)
+				return
+			}
+		}
+		jh.messenger <- slack.MessageInfo{
+			Text: "Couldn't find a response to your command.",
+			ChannelID: c.Event.Text,
+		}
 	}
+
 }
 
 func (lj *labJob) init() {
