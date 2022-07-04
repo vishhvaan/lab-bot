@@ -86,7 +86,7 @@ func (jh *JobHandler) CommandReciever(c chan slack.CommandInfo) {
 		} else {
 			jh.messenger <- slack.MessageInfo{
 				Text:      "I couldn't find a response to your command.",
-				ChannelID: command.Event.Text,
+				ChannelID: command.Event.Channel,
 			}
 		}
 	}
