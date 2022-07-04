@@ -111,3 +111,17 @@ func (lj *labJob) disable() {
 }
 
 func (lj *labJob) commandProcessor(c slack.CommandInfo) {}
+
+func commandCheck(c slack.CommandInfo, length int, m chan slack.MessageInfo, l *log.Entry) bool {
+	if len(c.Fields) > length {
+		message := "Your command has parameters than necessary"
+		go l.Info(message)
+		m <- slack.MessageInfo{
+			Text:      message,
+			ChannelID: c.Event.Channel,
+		}
+		return false
+	} else {
+		return true
+	}
+}

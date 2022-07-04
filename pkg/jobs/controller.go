@@ -48,22 +48,8 @@ func (cj *controllerJob) init() {
 	}
 }
 
-func (cj *controllerJob) commandCheck(c slack.CommandInfo, length int) bool {
-	if len(c.Fields) > length {
-		message := "Your command has parameters than necessary"
-		go cj.logger.Info(message)
-		cj.messenger <- slack.MessageInfo{
-			Text:      message,
-			ChannelID: c.Event.Channel,
-		}
-		return false
-	} else {
-		return true
-	}
-}
-
 func (cj *controllerJob) turnOn(c slack.CommandInfo) {
-	if cj.commandCheck(c, 2) {
+	if commandCheck(c, 2, cj.messenger, cj.logger) {
 		if cj.powerStatus {
 			message := "The " + cj.machineName + " is already on"
 			go cj.logger.Info(message)
@@ -80,7 +66,7 @@ func (cj *controllerJob) turnOn(c slack.CommandInfo) {
 }
 
 func (cj *controllerJob) turnOff(c slack.CommandInfo) {
-	if cj.commandCheck(c, 2) {
+	if commandCheck(c, 2, cj.messenger, cj.logger) {
 		if !cj.powerStatus {
 			message := "The " + cj.machineName + " is already off"
 			go cj.logger.Info(message)
@@ -123,7 +109,7 @@ func (cj *controllerJob) slackPowerResponse(status bool, err error, ev *slackeve
 }
 
 func (cj *controllerJob) getPowerStatus(c slack.CommandInfo) {
-	if cj.commandCheck(c, 2) {
+	if commandCheck(c, 2, cj.messenger, cj.logger) {
 		message := "The " + cj.machineName + " is "
 		if cj.powerStatus {
 			uptime := time.Now().Sub(cj.lastPowerOn)
