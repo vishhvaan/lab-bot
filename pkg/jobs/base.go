@@ -7,6 +7,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/vishhvaan/lab-bot/pkg/functions"
 	"github.com/vishhvaan/lab-bot/pkg/logging"
 	"github.com/vishhvaan/lab-bot/pkg/slack"
 )
@@ -80,15 +81,13 @@ func (jh *JobHandler) InitJobs() {
 func (jh *JobHandler) CommandReciever(c chan slack.CommandInfo) {
 	for command := range c {
 		k := strings.ToLower(command.Fields[0])
-		for job := range jh.jobs {
-			if job == k {
-				jh.jobs[job].commandProcessor(command)
-				return
+		if functions.Contains(functions.GetKeys(jh.jobs), k) {
+			jh.jobs[k].commandProcessor(command)
+		} else {
+			jh.messenger <- slack.MessageInfo{
+				Text:      "I couldn't find a response to your command.",
+				ChannelID: command.Event.Text,
 			}
-		}
-		jh.messenger <- slack.MessageInfo{
-			Text:      "I couldn't find a response to your command.",
-			ChannelID: command.Event.Text,
 		}
 	}
 }

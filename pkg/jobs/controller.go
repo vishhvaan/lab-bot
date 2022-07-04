@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -132,10 +133,11 @@ func (cj *controllerJob) commandProcessor(c slack.CommandInfo) {
 			"status": cj.getPowerStatus,
 		}
 		k := functions.GetKeys(controllerActions)
+		subcommand := strings.ToLower(c.Fields[1])
 		if len(c.Fields) == 1 {
 			cj.getPowerStatus(c)
-		} else if functions.Contains(k, c.Fields[1]) {
-			f := controllerActions[c.Fields[1]]
+		} else if functions.Contains(k, subcommand) {
+			f := controllerActions[subcommand]
 			f(c)
 		} else {
 			go cj.logger.WithField("fields", c.Fields).Warn("No callback function found.")
