@@ -1,6 +1,7 @@
 package slack
 
 import (
+	"math/rand"
 	"strings"
 
 	"github.com/slack-go/slack/slackevents"
@@ -35,6 +36,7 @@ var basicResponses = map[string]cb{
 	"sup": hello, "hi": hello,
 	"bye": bye, "goodbye": bye, "tata": bye,
 	"sysinfo": sysinfo,
+	"thanks":  thanks, "thank": thanks,
 }
 
 func hello(sc *slackClient, ev *slackevents.AppMentionEvent, fields []string) {
@@ -55,6 +57,22 @@ func bye(sc *slackClient, ev *slackevents.AppMentionEvent, fields []string) {
 
 func sysinfo(sc *slackClient, ev *slackevents.AppMentionEvent, fields []string) {
 	response := functions.GetSysInfo()
+	sc.PostMessage(MessageInfo{
+		ChannelID: ev.Channel,
+		Text:      response,
+	})
+}
+
+func thanks(sc *slackClient, ev *slackevents.AppMentionEvent, fields []string) {
+	allResponses := []string{
+		"No problemo",
+		"May the force be with you",
+		":subglasses:",
+		":mechanical_arm:",
+		":meow_party:",
+		":meow_code:",
+	}
+	response := allResponses[rand.Intn(len(allResponses))]
 	sc.PostMessage(MessageInfo{
 		ChannelID: ev.Channel,
 		Text:      response,
