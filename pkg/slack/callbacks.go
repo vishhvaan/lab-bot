@@ -67,7 +67,7 @@ func thanks(sc *slackClient, ev *slackevents.AppMentionEvent, fields []string) {
 	allResponses := []string{
 		"No problemo",
 		"May the force be with you",
-		":subglasses:",
+		":sunglasses:",
 		":mechanical_arm:",
 		":meow_party:",
 		":meow_code:",
