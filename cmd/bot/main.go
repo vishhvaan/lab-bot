@@ -11,6 +11,7 @@ import (
 	"github.com/vishhvaan/lab-bot/pkg/files"
 	"github.com/vishhvaan/lab-bot/pkg/jobs"
 	"github.com/vishhvaan/lab-bot/pkg/logging"
+	"github.com/vishhvaan/lab-bot/pkg/scheduling"
 	"github.com/vishhvaan/lab-bot/pkg/slack"
 )
 
@@ -45,11 +46,15 @@ func main() {
 
 	messages := make(chan slack.MessageInfo)
 	commands := make(chan slack.CommandInfo)
+	schedules := make(chan *scheduling.Schedule)
 
 	slackClient := slack.CreateClient(secrets, members, botChannel, commands)
 	go slackClient.MessageProcessor(messages)
 	go slackClient.EventProcessor()
 	go slackClient.RunSocketMode()
+
+	scheduleTracker := scheduling.CreateScheduleTracker(messages)
+	go scheduleTracker.SchedReciever(schedules)
 
 	jobHandler := jobs.CreateHandler(messages)
 	jobHandler.InitJobs()

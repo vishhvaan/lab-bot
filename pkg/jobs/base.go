@@ -1,14 +1,13 @@
 package jobs
 
 import (
-	// "github.com/go-co-op/gocron"
-
 	"strings"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/vishhvaan/lab-bot/pkg/functions"
 	"github.com/vishhvaan/lab-bot/pkg/logging"
+	"github.com/vishhvaan/lab-bot/pkg/scheduling"
 	"github.com/vishhvaan/lab-bot/pkg/slack"
 )
 
@@ -37,6 +36,7 @@ type labJob struct {
 	desc      string
 	logger    *log.Entry
 	messenger chan slack.MessageInfo
+	scheduler chan scheduling.Schedule
 	responses map[string]action
 	job
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/slack-go/slack/slackevents"
 
 	"github.com/vishhvaan/lab-bot/pkg/functions"
+	"github.com/vishhvaan/lab-bot/pkg/scheduling"
 	"github.com/vishhvaan/lab-bot/pkg/slack"
 )
 
@@ -22,6 +23,7 @@ type controllerJob struct {
 	customOn    func() (err error)
 	customOff   func() (err error)
 	logger      *log.Entry
+	scheduling  controllerSchedule
 	controller
 }
 
@@ -31,6 +33,12 @@ type controller interface {
 	turnOff(c slack.CommandInfo)
 	getPowerStatus(c slack.CommandInfo)
 	commandProcessor(c slack.CommandInfo)
+}
+
+type controllerSchedule struct {
+	enabled  bool
+	onSched  *scheduling.Schedule
+	offSched *scheduling.Schedule
 }
 
 func (cj *controllerJob) init() {
@@ -128,9 +136,10 @@ func (cj *controllerJob) getPowerStatus(c slack.CommandInfo) {
 func (cj *controllerJob) commandProcessor(c slack.CommandInfo) {
 	if cj.status {
 		controllerActions := map[string]action{
-			"on":     cj.turnOn,
-			"off":    cj.turnOff,
-			"status": cj.getPowerStatus,
+			"on":       cj.turnOn,
+			"off":      cj.turnOff,
+			"status":   cj.getPowerStatus,
+			"schedule": cj.scheduleHandler,
 		}
 		if len(c.Fields) == 1 {
 			cj.getPowerStatus(c)
@@ -154,4 +163,24 @@ func (cj *controllerJob) commandProcessor(c slack.CommandInfo) {
 			Text:      "The " + cj.name + " is disabled",
 		}
 	}
+}
+
+func (cj *controllerJob) scheduleHandler(c slack.CommandInfo) {
+	if len(c.Fields) == 2 {
+		cj.sendSchedulingStatus(c)
+	} else if len(c.Fields) > 2 {
+		schedlingActions := map[string]action{
+			"on":     cj.turnOn,
+			"off":    cj.turnOff,
+			"status": cj.sendSchedulingStatus,
+		}
+	}
+}
+
+func (cj *controllerJob) sendSchedulingStatus(c slack.CommandInfo) {
+
+}
+
+func (cj *controllerJob) getSchedulingStatus() string {
+
 }
