@@ -23,22 +23,16 @@ type controllerJob struct {
 	customOn    func() (err error)
 	customOff   func() (err error)
 	logger      *log.Entry
-	scheduling  controllerSchedule
+	scheduling  scheduling.ControllerSchedule
 	controller
 }
 
 type controller interface {
 	init()
-	turnOn(c slack.CommandInfo)
-	turnOff(c slack.CommandInfo)
-	getPowerStatus(c slack.CommandInfo)
+	turnOn(channel string)
+	turnOff(channel string)
+	getPowerStatus(channel string)
 	commandProcessor(c slack.CommandInfo)
-}
-
-type controllerSchedule struct {
-	enabled  bool
-	onSched  *scheduling.Schedule
-	offSched *scheduling.Schedule
 }
 
 func (cj *controllerJob) init() {
@@ -148,7 +142,13 @@ func (cj *controllerJob) commandProcessor(c slack.CommandInfo) {
 			subcommand := strings.ToLower(c.Fields[1])
 			if functions.Contains(k, subcommand) {
 				f := controllerActions[subcommand]
-				f(c)
+				if subcommand != "schedule" {
+					if commandCheck(c, 2, cj.messenger, cj.logger) {
+						f(c)
+					}
+				} else {
+					f(c)
+				}
 			} else {
 				go cj.logger.WithField("fields", c.Fields).Warn("No callback function found.")
 				cj.messenger <- slack.MessageInfo{
@@ -166,21 +166,24 @@ func (cj *controllerJob) commandProcessor(c slack.CommandInfo) {
 }
 
 func (cj *controllerJob) scheduleHandler(c slack.CommandInfo) {
+	schedulingActions := map[string]action{
+		"set":    cj.setSched,
+		"remove": cj.removeSched,
+		"status": cj.sendSchedulingStatus,
+	}
 	if len(c.Fields) == 2 {
 		cj.sendSchedulingStatus(c)
 	} else if len(c.Fields) > 2 {
-		schedlingActions := map[string]action{
-			"on":     cj.turnOn,
-			"off":    cj.turnOff,
-			"status": cj.sendSchedulingStatus,
+		k := functions.GetKeys(schedulingActions)
+		subcommand := strings.ToLower(c.Fields[1])
+		if functions.Contains(k, subcommand) {
+			f := schedulingActions[subcommand]
+			f(c)
+		} else {
 		}
 	}
 }
 
 func (cj *controllerJob) sendSchedulingStatus(c slack.CommandInfo) {
-
-}
-
-func (cj *controllerJob) getSchedulingStatus() string {
 
 }
