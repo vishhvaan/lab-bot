@@ -32,7 +32,7 @@ check and rewrite file and map
 
 type labJob struct {
 	name      string
-	status    bool
+	active    bool
 	desc      string
 	logger    *log.Entry
 	messenger chan slack.MessageInfo
@@ -86,26 +86,26 @@ func (jh *JobHandler) CommandReciever(c chan slack.CommandInfo) {
 		} else {
 			jh.messenger <- slack.MessageInfo{
 				Text:      "I couldn't find a response to your command.",
-				ChannelID: command.Event.Channel,
+				ChannelID: command.Channel,
 			}
 		}
 	}
 }
 
 func (lj *labJob) init() {
-	lj.status = true
+	lj.active = true
 	// lj.messenger <- slack.MessageInfo{
 	// 	Text: lj.name + " has been loaded",
 	// }
 }
 
 func (lj *labJob) enable() {
-	lj.status = true
+	lj.active = true
 	lj.logger.Info("Enabled job " + lj.name)
 }
 
 func (lj *labJob) disable() {
-	lj.status = false
+	lj.active = false
 	lj.logger.Info("Disabled job " + lj.name)
 }
 
@@ -113,11 +113,11 @@ func (lj *labJob) commandProcessor(c slack.CommandInfo) {}
 
 func commandCheck(c slack.CommandInfo, length int, m chan slack.MessageInfo, l *log.Entry) bool {
 	if len(c.Fields) > length {
-		message := "Your command has parameters than necessary"
+		message := "Your command has more parameters than necessary"
 		go l.Info(message)
 		m <- slack.MessageInfo{
 			Text:      message,
-			ChannelID: c.Event.Channel,
+			ChannelID: c.Channel,
 		}
 		return false
 	} else {

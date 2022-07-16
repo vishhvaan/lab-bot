@@ -46,7 +46,6 @@ func main() {
 
 	messages := make(chan slack.MessageInfo)
 	commands := make(chan slack.CommandInfo)
-	schedules := make(chan *scheduling.Schedule)
 
 	slackClient := slack.CreateClient(secrets, members, botChannel, commands)
 	go slackClient.MessageProcessor(messages)
@@ -54,7 +53,7 @@ func main() {
 	go slackClient.RunSocketMode()
 
 	scheduleTracker := scheduling.CreateScheduleTracker(messages)
-	go scheduleTracker.SchedReciever(schedules)
+	go scheduleTracker.Reciever()
 
 	jobHandler := jobs.CreateHandler(messages)
 	jobHandler.InitJobs()

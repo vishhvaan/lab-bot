@@ -10,13 +10,15 @@ import (
 
 type Schedule struct {
 	id        string
-	status    bool
+	active    bool
 	desc      string
 	cronExp   string
 	scheduler *gocron.Scheduler
 	logger    *log.Entry
 	schedule
 }
+
+var s chan *Schedule
 
 // // type SchedJobs struct {
 // // 	name      string
@@ -67,8 +69,12 @@ func CreateScheduleTracker(m chan slack.MessageInfo) (st *ScheduleTracker) {
 // 	}
 // }
 
-func (st *ScheduleTracker) SchedReciever(s chan *Schedule) {
+func (st *ScheduleTracker) Reciever() {
 	for sched := range s {
-		st.schedules[sched.id] = sched
+		if sched.active {
+			st.schedules[sched.id] = sched
+		} else {
+			delete(st.schedules, sched.id)
+		}
 	}
 }

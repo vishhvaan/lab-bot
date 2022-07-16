@@ -1,10 +1,9 @@
 package slack
 
-import "github.com/slack-go/slack/slackevents"
-
 type CommandInfo struct {
-	Fields []string
-	Event  *slackevents.AppMentionEvent
+	Fields    []string
+	Channel   string
+	TimeStamp string
 }
 
 func (sc *slackClient) RunSocketMode() {

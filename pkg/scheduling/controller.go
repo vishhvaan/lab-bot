@@ -4,6 +4,7 @@ import log "github.com/sirupsen/logrus"
 
 type ControllerSchedule struct {
 	enabled  bool
+	channel  string
 	logger   *log.Entry
 	onSched  *Schedule
 	offSched *Schedule

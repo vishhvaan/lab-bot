@@ -6,7 +6,6 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/slack-go/slack/slackevents"
 
 	"github.com/vishhvaan/lab-bot/pkg/functions"
 	"github.com/vishhvaan/lab-bot/pkg/scheduling"
@@ -29,9 +28,9 @@ type controllerJob struct {
 
 type controller interface {
 	init()
-	turnOn(channel string)
-	turnOff(channel string)
-	getPowerStatus(channel string)
+	turnOn(c slack.CommandInfo)
+	turnOff(c slack.CommandInfo)
+	getPowerStatus(c slack.CommandInfo)
 	commandProcessor(c slack.CommandInfo)
 }
 
@@ -51,40 +50,44 @@ func (cj *controllerJob) init() {
 	}
 }
 
-func (cj *controllerJob) turnOn(c slack.CommandInfo) {
+func (cj *controllerJob) TurnOn(c slack.CommandInfo) {
 	if commandCheck(c, 2, cj.messenger, cj.logger) {
 		if cj.powerStatus {
 			message := "The " + cj.machineName + " is already on"
 			go cj.logger.Info(message)
 			cj.messenger <- slack.MessageInfo{
 				Text:      message,
-				ChannelID: c.Event.Channel,
+				ChannelID: c.Channel,
 			}
 		} else {
 			err := cj.customOn()
 			cj.lastPowerOn = time.Now()
-			cj.slackPowerResponse(true, err, c.Event)
+			if c.TimeStamp != "" {
+				cj.slackPowerResponse(true, err, c)
+			}
 		}
 	}
 }
 
-func (cj *controllerJob) turnOff(c slack.CommandInfo) {
+func (cj *controllerJob) TurnOff(c slack.CommandInfo) {
 	if commandCheck(c, 2, cj.messenger, cj.logger) {
 		if !cj.powerStatus {
 			message := "The " + cj.machineName + " is already off"
 			go cj.logger.Info(message)
 			cj.messenger <- slack.MessageInfo{
 				Text:      message,
-				ChannelID: c.Event.Channel,
+				ChannelID: c.Channel,
 			}
 		} else {
 			err := cj.customOff()
-			cj.slackPowerResponse(false, err, c.Event)
+			if c.TimeStamp != "" {
+				cj.slackPowerResponse(false, err, c)
+			}
 		}
 	}
 }
 
-func (cj *controllerJob) slackPowerResponse(status bool, err error, ev *slackevents.AppMentionEvent) {
+func (cj *controllerJob) slackPowerResponse(status bool, err error, c slack.CommandInfo) {
 	statusString := "off"
 	if status {
 		statusString = "on"
@@ -101,8 +104,8 @@ func (cj *controllerJob) slackPowerResponse(status bool, err error, ev *slackeve
 		go cj.logger.Info(message)
 		cj.messenger <- slack.MessageInfo{
 			Type:      "react",
-			Timestamp: ev.TimeStamp,
-			ChannelID: ev.Channel,
+			Timestamp: c.TimeStamp,
+			ChannelID: c.Channel,
 			Text:      "ok_hand",
 		}
 		cj.messenger <- slack.MessageInfo{
@@ -121,17 +124,33 @@ func (cj *controllerJob) getPowerStatus(c slack.CommandInfo) {
 			message += "*off*"
 		}
 		cj.messenger <- slack.MessageInfo{
-			ChannelID: c.Event.Channel,
+			ChannelID: c.Channel,
 			Text:      message,
 		}
 	}
 }
 
+func (cj *controllerJob) errorMsg(fields []string, channel string, message string) {
+	go cj.logger.WithField("fields", fields).Warn(message)
+	cj.messenger <- slack.MessageInfo{
+		ChannelID: channel,
+		Text:      message,
+	}
+}
+
+func (cj *controllerJob) sendMsg(channel string, message string) {
+	go cj.logger.Info(message)
+	cj.messenger <- slack.MessageInfo{
+		ChannelID: channel,
+		Text:      message,
+	}
+}
+
 func (cj *controllerJob) commandProcessor(c slack.CommandInfo) {
-	if cj.status {
+	if cj.active {
 		controllerActions := map[string]action{
-			"on":       cj.turnOn,
-			"off":      cj.turnOff,
+			"on":       cj.TurnOn,
+			"off":      cj.TurnOff,
 			"status":   cj.getPowerStatus,
 			"schedule": cj.scheduleHandler,
 		}
@@ -142,24 +161,14 @@ func (cj *controllerJob) commandProcessor(c slack.CommandInfo) {
 			subcommand := strings.ToLower(c.Fields[1])
 			if functions.Contains(k, subcommand) {
 				f := controllerActions[subcommand]
-				if subcommand != "schedule" {
-					if commandCheck(c, 2, cj.messenger, cj.logger) {
-						f(c)
-					}
-				} else {
-					f(c)
-				}
+				f(c)
 			} else {
-				go cj.logger.WithField("fields", c.Fields).Warn("No callback function found.")
-				cj.messenger <- slack.MessageInfo{
-					ChannelID: c.Event.Channel,
-					Text:      "I'm not sure what you sayin",
-				}
+				cj.errorMsg(c.Fields, c.Channel, "I'm not sure what you sayin")
 			}
 		}
 	} else {
 		cj.messenger <- slack.MessageInfo{
-			ChannelID: c.Event.Channel,
+			ChannelID: c.Channel,
 			Text:      "The " + cj.name + " is disabled",
 		}
 	}
@@ -167,8 +176,8 @@ func (cj *controllerJob) commandProcessor(c slack.CommandInfo) {
 
 func (cj *controllerJob) scheduleHandler(c slack.CommandInfo) {
 	schedulingActions := map[string]action{
-		"set":    cj.setSched,
-		"remove": cj.removeSched,
+		"on":     cj.onSched,
+		"off":    cj.offSched,
 		"status": cj.sendSchedulingStatus,
 	}
 	if len(c.Fields) == 2 {
@@ -180,10 +189,62 @@ func (cj *controllerJob) scheduleHandler(c slack.CommandInfo) {
 			f := schedulingActions[subcommand]
 			f(c)
 		} else {
+			cj.errorMsg(c.Fields, c.Channel, "I'm not sure what you sayin")
 		}
 	}
 }
 
-func (cj *controllerJob) sendSchedulingStatus(c slack.CommandInfo) {
+func (cj *controllerJob) onSched(c slack.CommandInfo) {
+	if len(c.Fields) >= 4 {
+		if c.Fields[3] == "set" && len(c.Fields) > 4 {
+			cronExp := strings.Join(c.Fields[4:], " ")
+			err := cj.scheduling.SetOn(cronExp)
+			if err != nil {
+				cj.errorMsg(c.Fields, c.Channel, err.Error())
+			} else {
+				cj.sendMsg(c.Channel, "*Successfully scheduled power on task*.\n"+cj.scheduling.GetSchedulingStatus())
+			}
+			return
+		} else if c.Fields[3] == "remove" && len(c.Fields) == 4 {
+			err := cj.scheduling.RemoveOn()
+			if err != nil {
+				cj.errorMsg(c.Fields, c.Channel, err.Error())
+			} else {
+				cj.sendMsg(c.Channel, "*Successfully removed power on task*.\n"+cj.scheduling.GetSchedulingStatus())
+			}
+			return
+		}
+	}
+	cj.errorMsg(c.Fields, c.Channel, "Malformed scheduling command")
+}
 
+func (cj *controllerJob) offSched(c slack.CommandInfo) {
+	if len(c.Fields) >= 4 {
+		if c.Fields[3] == "set" && len(c.Fields) > 4 {
+			cronExp := strings.Join(c.Fields[4:], " ")
+			err := cj.scheduling.SetOff(cronExp)
+			if err != nil {
+				cj.errorMsg(c.Fields, c.Channel, err.Error())
+			} else {
+				cj.sendMsg(c.Channel, "*Successfully scheduled power off task*.\n"+cj.scheduling.GetSchedulingStatus())
+			}
+			return
+		} else if c.Fields[3] == "remove" && len(c.Fields) == 4 {
+			err := cj.scheduling.RemoveOff()
+			if err != nil {
+				cj.errorMsg(c.Fields, c.Channel, err.Error())
+			} else {
+				cj.sendMsg(c.Channel, "*Successfully removed power off task*.\n"+cj.scheduling.GetSchedulingStatus())
+			}
+			return
+		}
+	}
+	cj.errorMsg(c.Fields, c.Channel, "Malformed scheduling command")
+}
+
+func (cj *controllerJob) sendSchedulingStatus(c slack.CommandInfo) {
+	cj.messenger <- slack.MessageInfo{
+		ChannelID: c.Channel,
+		Text:      cj.scheduling.GetSchedulingStatus(),
+	}
 }
