@@ -7,7 +7,6 @@ import (
 
 	"github.com/vishhvaan/lab-bot/pkg/functions"
 	"github.com/vishhvaan/lab-bot/pkg/logging"
-	"github.com/vishhvaan/lab-bot/pkg/scheduling"
 	"github.com/vishhvaan/lab-bot/pkg/slack"
 )
 
@@ -32,11 +31,12 @@ check and rewrite file and map
 
 type labJob struct {
 	name      string
+	keyword   string
 	active    bool
 	desc      string
 	logger    *log.Entry
 	messenger chan slack.MessageInfo
-	scheduler chan scheduling.Schedule
+	commander chan slack.CommandInfo
 	responses map[string]action
 	job
 }
@@ -53,10 +53,11 @@ type job interface {
 type JobHandler struct {
 	jobs      map[string]job
 	messenger chan slack.MessageInfo
+	commander chan slack.CommandInfo
 	logger    *log.Entry
 }
 
-func CreateHandler(m chan slack.MessageInfo) (jh *JobHandler) {
+func CreateHandler(m chan slack.MessageInfo, c chan slack.CommandInfo) (jh *JobHandler) {
 	jobs := make(map[string]job)
 
 	jobLogger := logging.CreateNewLogger("jobhandler", "jobhandler")
@@ -64,6 +65,7 @@ func CreateHandler(m chan slack.MessageInfo) (jh *JobHandler) {
 	return &JobHandler{
 		jobs:      jobs,
 		messenger: m,
+		commander: c,
 		logger:    jobLogger,
 	}
 }
@@ -78,8 +80,8 @@ func (jh *JobHandler) InitJobs() {
 	}
 }
 
-func (jh *JobHandler) CommandReciever(c chan slack.CommandInfo) {
-	for command := range c {
+func (jh *JobHandler) CommandReceiver() {
+	for command := range jh.commander {
 		k := strings.ToLower(command.Fields[0])
 		if functions.Contains(functions.GetKeys(jh.jobs), k) {
 			jh.jobs[k].commandProcessor(command)

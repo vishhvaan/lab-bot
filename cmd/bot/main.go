@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math/rand"
 	"path"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -23,6 +25,7 @@ var (
 )
 
 func init() {
+	rand.Seed(time.Now().UnixNano())
 	logging.Setup()
 	exePath := logging.FindExeDir()
 	flag.StringVar(&membersFile, "members", path.Join(exePath, "members.yml"), "Location of the members file")
@@ -55,7 +58,7 @@ func main() {
 	scheduleTracker := scheduling.CreateScheduleTracker(messages)
 	go scheduleTracker.Reciever()
 
-	jobHandler := jobs.CreateHandler(messages)
+	jobHandler := jobs.CreateHandler(messages, commands)
 	jobHandler.InitJobs()
-	jobHandler.CommandReciever(commands)
+	jobHandler.CommandReceiver()
 }

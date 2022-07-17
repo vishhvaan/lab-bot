@@ -15,12 +15,12 @@ import (
 )
 
 type slackClient struct {
-	api    *goslack.Client
-	client *socketmode.Client
-	slackBot
+	api       *goslack.Client
+	client    *socketmode.Client
 	logger    *log.Entry
 	members   map[string]config.Member
 	commander chan CommandInfo
+	slackBot
 }
 
 type slackBot struct {
@@ -77,15 +77,15 @@ func CreateClient(secrets map[string]string, members map[string]config.Member, b
 	}
 
 	sc = &slackClient{
-		api:    api,
-		client: client,
+		api:       api,
+		client:    client,
+		logger:    slackLogger,
+		members:   members,
+		commander: c,
 		slackBot: slackBot{
 			bot:          bot,
 			botChannelID: botChannelID,
 		},
-		logger:    slackLogger,
-		members:   members,
-		commander: c,
 	}
 	slackLogger.Info("Created Slack client.")
 	return sc

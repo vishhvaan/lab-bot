@@ -1,6 +1,8 @@
 package scheduling
 
 import (
+	"math/rand"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/go-co-op/gocron"
@@ -8,17 +10,20 @@ import (
 	"github.com/vishhvaan/lab-bot/pkg/slack"
 )
 
+const idLength = 5
+const idLetters = "abcdefghijklmnopqrstuvwxyz0123456789"
+
 type Schedule struct {
 	id        string
-	active    bool
-	desc      string
+	name      string
 	cronExp   string
+	channel   string
 	scheduler *gocron.Scheduler
 	logger    *log.Entry
 	schedule
 }
 
-var s chan *Schedule
+var schedChan chan *Schedule
 
 // // type SchedJobs struct {
 // // 	name      string
@@ -70,11 +75,19 @@ func CreateScheduleTracker(m chan slack.MessageInfo) (st *ScheduleTracker) {
 // }
 
 func (st *ScheduleTracker) Reciever() {
-	for sched := range s {
-		if sched.active {
+	for sched := range schedChan {
+		if sched.scheduler.IsRunning() {
 			st.schedules[sched.id] = sched
 		} else {
 			delete(st.schedules, sched.id)
 		}
 	}
+}
+
+func generateID() string {
+	b := make([]byte, idLength)
+	for i := range b {
+		b[i] = idLetters[rand.Intn(len(idLetters))]
+	}
+	return string(b)
 }
