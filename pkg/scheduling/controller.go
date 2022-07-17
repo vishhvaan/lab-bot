@@ -20,7 +20,7 @@ type ControllerSchedule struct {
 }
 
 func (cs *ControllerSchedule) ContSetOn(cronSched string, channel string, keyword string, m chan slack.MessageInfo, c chan slack.CommandInfo) (err error) {
-	if cs.onSched.scheduler.IsRunning() {
+	if cs.onSched.scheduler != nil && cs.onSched.scheduler.IsRunning() {
 		return errors.New("there exists a scheduled on task")
 	} else {
 		s, err := cs.contSet(cronSched, channel, keyword, m, c, "on")
@@ -32,7 +32,7 @@ func (cs *ControllerSchedule) ContSetOn(cronSched string, channel string, keywor
 }
 
 func (cs *ControllerSchedule) ContSetOff(cronSched string, channel string, keyword string, m chan slack.MessageInfo, c chan slack.CommandInfo) (err error) {
-	if cs.offSched.scheduler.IsRunning() {
+	if cs.offSched.scheduler != nil && cs.offSched.scheduler.IsRunning() {
 		return errors.New("there exists a scheduled off task")
 	} else {
 		s, err := cs.contSet(cronSched, channel, keyword, m, c, "off")
@@ -83,7 +83,7 @@ func (cs *ControllerSchedule) ContRemoveOn() (err error) {
 	if cs.onSched.scheduler.IsRunning() {
 		cs.onSched.scheduler.Stop()
 		schedChan <- cs.onSched
-		cs.onSched = &Schedule{}
+		cs.onSched = nil
 		return nil
 	} else {
 		return errors.New("there is no scheduled on task")
@@ -94,7 +94,7 @@ func (cs *ControllerSchedule) ContRemoveOff() (err error) {
 	if cs.offSched.scheduler.IsRunning() {
 		cs.offSched.scheduler.Stop()
 		schedChan <- cs.offSched
-		cs.offSched = &Schedule{}
+		cs.offSched = nil
 		return nil
 	} else {
 		return errors.New("there is no scheduled off task")
@@ -102,9 +102,6 @@ func (cs *ControllerSchedule) ContRemoveOff() (err error) {
 }
 
 func (cs *ControllerSchedule) ContGetSchedulingStatus() string {
-	if !cs.onSched.scheduler.IsRunning() && !cs.offSched.scheduler.IsRunning() {
-		return "*Scheduling*: Not setup"
-	}
 	var status strings.Builder
 	exprDesc, err := crondesc.NewDescriptor()
 	if err != nil {
@@ -112,7 +109,8 @@ func (cs *ControllerSchedule) ContGetSchedulingStatus() string {
 		cs.Logger.WithField("err", err).Error(message)
 		return "*Scheduling*: " + message
 	}
-	if cs.onSched.scheduler.IsRunning() {
+
+	if cs.onSched.scheduler != nil && cs.onSched.scheduler.IsRunning() {
 		status.WriteString("*Scheduled On*: ")
 		onText, err := exprDesc.ToDescription(cs.onSched.cronExp, crondesc.Locale_en)
 		if err != nil {
@@ -124,7 +122,8 @@ func (cs *ControllerSchedule) ContGetSchedulingStatus() string {
 		}
 		status.WriteString("\n")
 	}
-	if cs.offSched.scheduler.IsRunning() {
+
+	if cs.offSched.scheduler != nil && cs.offSched.scheduler.IsRunning() {
 		status.WriteString("*Scheduled Off*: ")
 		onText, err := exprDesc.ToDescription(cs.offSched.cronExp, crondesc.Locale_en)
 		if err != nil {
@@ -136,5 +135,10 @@ func (cs *ControllerSchedule) ContGetSchedulingStatus() string {
 		}
 		status.WriteString("\n")
 	}
+
+	if status.Len() == 0 {
+		status.WriteString("*Scheduling*: Not setup")
+	}
+
 	return status.String()
 }
