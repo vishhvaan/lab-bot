@@ -198,7 +198,7 @@ func (cj *controllerJob) onSched(c slack.CommandInfo) {
 	if len(c.Fields) >= 4 {
 		if c.Fields[3] == "set" && len(c.Fields) > 4 {
 			cronExp := strings.Join(c.Fields[4:], " ")
-			err := cj.scheduling.ContSetOn(cronExp, c.Channel, cj.keyword, cj.TurnOn)
+			err := cj.scheduling.ContSetOn(cronExp, c.Channel, cj.keyword, cj.messenger, cj.commander)
 			if err != nil {
 				cj.errorMsg(c.Fields, c.Channel, err.Error())
 			} else {
@@ -222,7 +222,7 @@ func (cj *controllerJob) offSched(c slack.CommandInfo) {
 	if len(c.Fields) >= 4 {
 		if c.Fields[3] == "set" && len(c.Fields) > 4 {
 			cronExp := strings.Join(c.Fields[4:], " ")
-			err := cj.scheduling.ContSetOff(cronExp, c.Channel, cj.keyword, cj.TurnOff)
+			err := cj.scheduling.ContSetOff(cronExp, c.Channel, cj.keyword, cj.messenger, cj.commander)
 			if err != nil {
 				cj.errorMsg(c.Fields, c.Channel, err.Error())
 			} else {

@@ -19,11 +19,11 @@ type ControllerSchedule struct {
 	offSched *Schedule
 }
 
-func (cs *ControllerSchedule) ContSetOn(cronSched string, channel string, keyword string, turnOn func(slack.CommandInfo)) (err error) {
+func (cs *ControllerSchedule) ContSetOn(cronSched string, channel string, keyword string, m chan slack.MessageInfo, c chan slack.CommandInfo) (err error) {
 	if cs.onSched.scheduler.IsRunning() {
 		return errors.New("there exists a scheduled on task")
 	} else {
-		s, err := cs.contSet(cronSched, channel, keyword, turnOn, "on")
+		s, err := cs.contSet(cronSched, channel, keyword, m, c, "on")
 		if err == nil {
 			cs.onSched = s
 		}
@@ -31,11 +31,11 @@ func (cs *ControllerSchedule) ContSetOn(cronSched string, channel string, keywor
 	}
 }
 
-func (cs *ControllerSchedule) ContSetOff(cronSched string, channel string, keyword string, turnOff func(slack.CommandInfo)) (err error) {
+func (cs *ControllerSchedule) ContSetOff(cronSched string, channel string, keyword string, m chan slack.MessageInfo, c chan slack.CommandInfo) (err error) {
 	if cs.offSched.scheduler.IsRunning() {
 		return errors.New("there exists a scheduled off task")
 	} else {
-		s, err := cs.contSet(cronSched, channel, keyword, turnOff, "off")
+		s, err := cs.contSet(cronSched, channel, keyword, m, c, "off")
 		if err == nil {
 			cs.offSched = s
 		}
@@ -43,24 +43,32 @@ func (cs *ControllerSchedule) ContSetOff(cronSched string, channel string, keywo
 	}
 }
 
-func (cs *ControllerSchedule) contSet(cronSched string, channel string, keyword string, powerFunc func(slack.CommandInfo), powerVal string) (sched *Schedule, err error) {
+func (cs *ControllerSchedule) contSet(cronSched string, channel string, keyword string, m chan slack.MessageInfo, c chan slack.CommandInfo, powerVal string) (sched *Schedule, err error) {
 	_, err = cron.ParseStandard(cronSched)
 	if err != nil {
 		return &Schedule{}, err
 	}
 
 	s := gocron.NewScheduler(time.Now().Local().Location())
-	c := slack.CommandInfo{
+	command := slack.CommandInfo{
 		Fields:  []string{keyword, powerVal},
 		Channel: channel,
 	}
 
 	name := keyword + " " + powerVal
-	s.Cron(cronSched).Tag(powerVal).Do(powerFunc, c)
+	id := generateID()
+	s.Cron(cronSched).Tag(powerVal).Do(func(m chan slack.MessageInfo, c chan slack.CommandInfo, command slack.CommandInfo, id string, name string, channel string) {
+		t := "[" + id + "] Executing " + name
+		m <- slack.MessageInfo{
+			ChannelID: channel,
+			Text:      t,
+		}
+		c <- command
+	}, m, c, command, id, name, channel)
 	s.StartAsync()
 
 	sch := &Schedule{
-		id:        generateID(),
+		id:        id,
 		name:      name,
 		cronExp:   cronSched,
 		channel:   channel,
