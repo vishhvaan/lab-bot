@@ -3,6 +3,7 @@ package functions
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -29,7 +30,7 @@ func GetSysInfo() (si string) {
 			hostinfo.WriteString(h.Info().OS.Family + ", " + h.Info().OS.Type + "\n")
 		}
 	}
-	hostinfo.WriteString("*Timezone*: " + h.Info().Timezone + "\n")
+	hostinfo.WriteString("*Datetime*: " + time.Now().Format(time.UnixDate) + "\n")
 
 	hostinfo.WriteString("*Containerized*: ")
 	if *h.Info().Containerized {

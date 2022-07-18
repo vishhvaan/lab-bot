@@ -20,7 +20,7 @@ type ControllerSchedule struct {
 }
 
 func (cs *ControllerSchedule) ContSetOn(cronSched string, channel string, keyword string, m chan slack.MessageInfo, c chan slack.CommandInfo) (err error) {
-	if cs.onSched.scheduler != nil && cs.onSched.scheduler.IsRunning() {
+	if cs.onSched != nil && cs.onSched.scheduler != nil && cs.onSched.scheduler.IsRunning() {
 		return errors.New("there exists a scheduled on task")
 	} else {
 		s, err := cs.contSet(cronSched, channel, keyword, m, c, "on")
@@ -32,7 +32,7 @@ func (cs *ControllerSchedule) ContSetOn(cronSched string, channel string, keywor
 }
 
 func (cs *ControllerSchedule) ContSetOff(cronSched string, channel string, keyword string, m chan slack.MessageInfo, c chan slack.CommandInfo) (err error) {
-	if cs.offSched.scheduler != nil && cs.offSched.scheduler.IsRunning() {
+	if cs.offSched != nil && cs.offSched.scheduler != nil && cs.offSched.scheduler.IsRunning() {
 		return errors.New("there exists a scheduled off task")
 	} else {
 		s, err := cs.contSet(cronSched, channel, keyword, m, c, "off")
@@ -46,7 +46,7 @@ func (cs *ControllerSchedule) ContSetOff(cronSched string, channel string, keywo
 func (cs *ControllerSchedule) contSet(cronSched string, channel string, keyword string, m chan slack.MessageInfo, c chan slack.CommandInfo, powerVal string) (sched *Schedule, err error) {
 	_, err = cron.ParseStandard(cronSched)
 	if err != nil {
-		return &Schedule{}, err
+		return nil, err
 	}
 
 	s := gocron.NewScheduler(time.Now().Local().Location())
@@ -75,14 +75,14 @@ func (cs *ControllerSchedule) contSet(cronSched string, channel string, keyword 
 		scheduler: s,
 		logger:    cs.Logger.WithField("job", name),
 	}
-	schedChan <- sch
+	// schedChan <- sch
 	return sch, nil
 }
 
 func (cs *ControllerSchedule) ContRemoveOn() (err error) {
-	if cs.onSched.scheduler.IsRunning() {
+	if cs.onSched != nil && cs.onSched.scheduler != nil && cs.onSched.scheduler.IsRunning() {
 		cs.onSched.scheduler.Stop()
-		schedChan <- cs.onSched
+		// schedChan <- cs.onSched
 		cs.onSched = nil
 		return nil
 	} else {
@@ -91,9 +91,9 @@ func (cs *ControllerSchedule) ContRemoveOn() (err error) {
 }
 
 func (cs *ControllerSchedule) ContRemoveOff() (err error) {
-	if cs.offSched.scheduler.IsRunning() {
+	if cs.offSched != nil && cs.offSched.scheduler != nil && cs.offSched.scheduler.IsRunning() {
 		cs.offSched.scheduler.Stop()
-		schedChan <- cs.offSched
+		// schedChan <- cs.offSched
 		cs.offSched = nil
 		return nil
 	} else {

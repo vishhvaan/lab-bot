@@ -62,9 +62,7 @@ func (cj *controllerJob) TurnOn(c slack.CommandInfo) {
 		} else {
 			err := cj.customOn()
 			cj.lastPowerOn = time.Now()
-			if c.TimeStamp != "" {
-				cj.slackPowerResponse(true, err, c)
-			}
+			cj.slackPowerResponse(true, err, c)
 		}
 	}
 }
@@ -80,9 +78,7 @@ func (cj *controllerJob) TurnOff(c slack.CommandInfo) {
 			}
 		} else {
 			err := cj.customOff()
-			if c.TimeStamp != "" {
-				cj.slackPowerResponse(false, err, c)
-			}
+			cj.slackPowerResponse(false, err, c)
 		}
 	}
 }
@@ -102,11 +98,13 @@ func (cj *controllerJob) slackPowerResponse(status bool, err error, c slack.Comm
 		cj.powerStatus = status
 		message := "Turned " + statusString + " the " + cj.machineName
 		go cj.logger.Info(message)
-		cj.messenger <- slack.MessageInfo{
-			Type:      "react",
-			Timestamp: c.TimeStamp,
-			ChannelID: c.Channel,
-			Text:      "ok_hand",
+		if c.TimeStamp != "" {
+			cj.messenger <- slack.MessageInfo{
+				Type:      "react",
+				Timestamp: c.TimeStamp,
+				ChannelID: c.Channel,
+				Text:      "ok_hand",
+			}
 		}
 		cj.messenger <- slack.MessageInfo{
 			Text: message,
@@ -123,6 +121,8 @@ func (cj *controllerJob) getPowerStatus(c slack.CommandInfo) {
 		} else {
 			message += "*off*"
 		}
+		message += "\n" + cj.scheduling.ContGetSchedulingStatus()
+
 		cj.messenger <- slack.MessageInfo{
 			ChannelID: c.Channel,
 			Text:      message,
@@ -184,7 +184,7 @@ func (cj *controllerJob) scheduleHandler(c slack.CommandInfo) {
 		cj.sendSchedulingStatus(c)
 	} else if len(c.Fields) > 2 {
 		k := functions.GetKeys(schedulingActions)
-		subcommand := strings.ToLower(c.Fields[1])
+		subcommand := strings.ToLower(c.Fields[2])
 		if functions.Contains(k, subcommand) {
 			f := schedulingActions[subcommand]
 			f(c)
@@ -202,7 +202,7 @@ func (cj *controllerJob) onSched(c slack.CommandInfo) {
 			if err != nil {
 				cj.errorMsg(c.Fields, c.Channel, err.Error())
 			} else {
-				cj.sendMsg(c.Channel, "*Successfully scheduled power on task*.\n"+cj.scheduling.ContGetSchedulingStatus())
+				cj.sendMsg(c.Channel, "_Successfully scheduled power on task._\n"+cj.scheduling.ContGetSchedulingStatus())
 			}
 			return
 		} else if c.Fields[3] == "remove" && len(c.Fields) == 4 {
@@ -210,7 +210,7 @@ func (cj *controllerJob) onSched(c slack.CommandInfo) {
 			if err != nil {
 				cj.errorMsg(c.Fields, c.Channel, err.Error())
 			} else {
-				cj.sendMsg(c.Channel, "*Successfully removed power on task*.\n"+cj.scheduling.ContGetSchedulingStatus())
+				cj.sendMsg(c.Channel, "_Successfully removed power on task._\n"+cj.scheduling.ContGetSchedulingStatus())
 			}
 			return
 		}
@@ -226,7 +226,7 @@ func (cj *controllerJob) offSched(c slack.CommandInfo) {
 			if err != nil {
 				cj.errorMsg(c.Fields, c.Channel, err.Error())
 			} else {
-				cj.sendMsg(c.Channel, "*Successfully scheduled power off task*.\n"+cj.scheduling.ContGetSchedulingStatus())
+				cj.sendMsg(c.Channel, "_Successfully scheduled power off task._\n"+cj.scheduling.ContGetSchedulingStatus())
 			}
 			return
 		} else if c.Fields[3] == "remove" && len(c.Fields) == 4 {
@@ -234,7 +234,7 @@ func (cj *controllerJob) offSched(c slack.CommandInfo) {
 			if err != nil {
 				cj.errorMsg(c.Fields, c.Channel, err.Error())
 			} else {
-				cj.sendMsg(c.Channel, "*Successfully removed power off task*.\n"+cj.scheduling.ContGetSchedulingStatus())
+				cj.sendMsg(c.Channel, "_Successfully removed power off task._\n"+cj.scheduling.ContGetSchedulingStatus())
 			}
 			return
 		}
