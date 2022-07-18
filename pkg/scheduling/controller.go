@@ -110,7 +110,7 @@ func (cs *ControllerSchedule) ContGetSchedulingStatus() string {
 		return "*Scheduling*: " + message
 	}
 
-	if cs.onSched.scheduler != nil && cs.onSched.scheduler.IsRunning() {
+	if cs.onSched != nil && cs.onSched.scheduler != nil && cs.onSched.scheduler.IsRunning() {
 		status.WriteString("*Scheduled On*: ")
 		onText, err := exprDesc.ToDescription(cs.onSched.cronExp, crondesc.Locale_en)
 		if err != nil {
@@ -123,7 +123,7 @@ func (cs *ControllerSchedule) ContGetSchedulingStatus() string {
 		status.WriteString("\n")
 	}
 
-	if cs.offSched.scheduler != nil && cs.offSched.scheduler.IsRunning() {
+	if cs.offSched != nil && cs.offSched.scheduler != nil && cs.offSched.scheduler.IsRunning() {
 		status.WriteString("*Scheduled Off*: ")
 		onText, err := exprDesc.ToDescription(cs.offSched.cronExp, crondesc.Locale_en)
 		if err != nil {
