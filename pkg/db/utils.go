@@ -29,10 +29,10 @@ func OpenDB() {
 	defer botDB.db.Close()
 }
 
-func AddStringValue(bucket string, key string, value string) {
+func AddValue(bucket string, key string, value []byte) {
 	err := botDB.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
-		err := b.Put([]byte(key), []byte(value))
+		err := b.Put([]byte(key), value)
 		return err
 	})
 
@@ -45,11 +45,10 @@ func AddStringValue(bucket string, key string, value string) {
 	}
 }
 
-func ReadStringValue(bucket string, key string) (value string) {
+func ReadValue(bucket string, key string) (value []byte) {
 	err := botDB.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
-		bytes := b.Get([]byte(key))
-		value = string(bytes)
+		value = b.Get([]byte(key))
 		return nil
 	})
 
