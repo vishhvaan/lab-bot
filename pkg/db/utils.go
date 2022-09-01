@@ -29,9 +29,23 @@ func OpenDB() {
 	defer botDB.db.Close()
 }
 
+func CheckIfBucketExists(bucket string) bool {
+	var b *bolt.Bucket
+	_ = botDB.db.View(func(tx *bolt.Tx) error {
+		b = tx.Bucket([]byte(bucket))
+		return nil
+	})
+
+	if b == nil {
+		return false
+	} else {
+		return true
+	}
+}
+
 func CreateBucket(bucket string) {
 	err := botDB.db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucket([]byte(bucket))
+		_, err := tx.CreateBucketIfNotExists([]byte(bucket))
 		return err
 	})
 
