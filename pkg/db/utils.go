@@ -29,6 +29,17 @@ func OpenDB() {
 	defer botDB.db.Close()
 }
 
+func CreateBucket(bucket string) {
+	err := botDB.db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucket([]byte(bucket))
+		return err
+	})
+
+	if err != nil {
+		botDB.logger.WithError(err).WithField("bucket", bucket).Error("Cannot create bucket")
+	}
+}
+
 func AddValue(bucket string, key string, value []byte) {
 	err := botDB.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
