@@ -16,7 +16,7 @@ type database struct {
 
 var botDB database
 
-func OpenDB() {
+func Open() {
 	botDB.logger = logging.CreateNewLogger("database", "database")
 	exePath := logging.FindExeDir()
 	dbPath := path.Join(exePath, dbFile)
@@ -25,6 +25,8 @@ func OpenDB() {
 	botDB.db, err = bolt.Open(dbPath, 0600, nil)
 	if err != nil {
 		botDB.logger.WithError(err).Panic("database could not be opened")
+	} else {
+		botDB.logger.Info("Opened database")
 	}
 	defer botDB.db.Close()
 }

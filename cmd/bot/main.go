@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/vishhvaan/lab-bot/pkg/config"
+	"github.com/vishhvaan/lab-bot/pkg/db"
 	"github.com/vishhvaan/lab-bot/pkg/files"
 	"github.com/vishhvaan/lab-bot/pkg/jobs"
 	"github.com/vishhvaan/lab-bot/pkg/logging"
@@ -46,6 +47,8 @@ func main() {
 	members := config.ParseMembers(membersFile)
 	secrets := config.ParseSecrets(secretsFile)
 	slack.CheckSecrets(secrets)
+
+	db.Open()
 
 	messages := make(chan slack.MessageInfo)
 	commands := make(chan slack.CommandInfo)
