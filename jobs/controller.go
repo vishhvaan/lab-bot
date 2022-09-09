@@ -7,9 +7,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/vishhvaan/lab-bot/pkg/functions"
-	"github.com/vishhvaan/lab-bot/pkg/scheduling"
-	"github.com/vishhvaan/lab-bot/pkg/slack"
+	"github.com/vishhvaan/lab-bot/functions"
+	"github.com/vishhvaan/lab-bot/scheduling"
+	"github.com/vishhvaan/lab-bot/slack"
 )
 
 type controllerJob struct {

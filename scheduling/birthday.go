@@ -4,7 +4,7 @@ package scheduling
 // 	"github.com/go-co-op/gocron"
 // 	log "github.com/sirupsen/logrus"
 
-// 	"github.com/vishhvaan/lab-bot/pkg/logging"
+// 	"github.com/vishhvaan/lab-bot/logging"
 // )
 
 // func ScheduleBirthdays() {

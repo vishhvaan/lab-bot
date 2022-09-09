@@ -10,8 +10,8 @@ import (
 	goslack "github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"
 
-	"github.com/vishhvaan/lab-bot/pkg/config"
-	"github.com/vishhvaan/lab-bot/pkg/logging"
+	"github.com/vishhvaan/lab-bot/config"
+	"github.com/vishhvaan/lab-bot/logging"
 )
 
 type slackClient struct {

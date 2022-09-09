@@ -6,8 +6,8 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/go-co-op/gocron"
-	"github.com/vishhvaan/lab-bot/pkg/logging"
-	"github.com/vishhvaan/lab-bot/pkg/slack"
+	"github.com/vishhvaan/lab-bot/logging"
+	"github.com/vishhvaan/lab-bot/slack"
 )
 
 const idLength = 5

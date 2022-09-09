@@ -9,13 +9,13 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/vishhvaan/lab-bot/pkg/config"
-	"github.com/vishhvaan/lab-bot/pkg/db"
-	"github.com/vishhvaan/lab-bot/pkg/files"
-	"github.com/vishhvaan/lab-bot/pkg/jobs"
-	"github.com/vishhvaan/lab-bot/pkg/logging"
-	"github.com/vishhvaan/lab-bot/pkg/scheduling"
-	"github.com/vishhvaan/lab-bot/pkg/slack"
+	"github.com/vishhvaan/lab-bot/config"
+	"github.com/vishhvaan/lab-bot/db"
+	"github.com/vishhvaan/lab-bot/files"
+	"github.com/vishhvaan/lab-bot/jobs"
+	"github.com/vishhvaan/lab-bot/logging"
+	"github.com/vishhvaan/lab-bot/scheduling"
+	"github.com/vishhvaan/lab-bot/slack"
 )
 
 var (

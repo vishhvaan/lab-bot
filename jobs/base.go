@@ -5,9 +5,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/vishhvaan/lab-bot/pkg/functions"
-	"github.com/vishhvaan/lab-bot/pkg/logging"
-	"github.com/vishhvaan/lab-bot/pkg/slack"
+	"github.com/vishhvaan/lab-bot/functions"
+	"github.com/vishhvaan/lab-bot/logging"
+	"github.com/vishhvaan/lab-bot/slack"
 )
 
 /*

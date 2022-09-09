@@ -6,7 +6,7 @@ import (
 
 	"github.com/slack-go/slack/slackevents"
 
-	"github.com/vishhvaan/lab-bot/pkg/functions"
+	"github.com/vishhvaan/lab-bot/functions"
 )
 
 func (sc *slackClient) commandInterpreter(ev *slackevents.AppMentionEvent) {

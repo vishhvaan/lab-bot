@@ -10,7 +10,7 @@ import (
 	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/vishhvaan/lab-bot/pkg/slack"
+	"github.com/vishhvaan/lab-bot/slack"
 )
 
 type ControllerSchedule struct {

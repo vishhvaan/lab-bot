@@ -6,7 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	bolt "go.etcd.io/bbolt"
 
-	"github.com/vishhvaan/lab-bot/pkg/logging"
+	"github.com/vishhvaan/lab-bot/logging"
 )
 
 type database struct {
