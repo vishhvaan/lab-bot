@@ -99,6 +99,10 @@ func ReadValue(bucket string, key string) (value []byte, err error) {
 }
 
 func GetAllKeysValues(bucket string) (keys [][]byte, values [][]byte, err error) {
+	if !CheckIfBucketExists(bucket) {
+		return nil, nil, errors.New("bucket does not exist")
+	}
+
 	err = botDB.db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
 		b := tx.Bucket([]byte(bucket))
