@@ -32,21 +32,49 @@ func Open() {
 	defer botDB.db.Close()
 }
 
-func CheckIfBucketExists(bucket string) bool {
-	var b *bolt.Bucket
-	_ = botDB.db.View(func(tx *bolt.Tx) error {
-		b = tx.Bucket([]byte(bucket))
-		return nil
-	})
-
-	if b == nil {
-		return false
+func bucketFinder(tx *bolt.Tx, path []string) (b *bolt.Bucket, err error) {
+	notExist := errors.New("bucket does not exist at path")
+	var bucket *bolt.Bucket
+	if len(path) == 0 {
+		return nil, notExist
 	} else {
-		return true
+		bucket = tx.Bucket([]byte(path[0]))
+		path = path[1:]
+		for len(path) > 0 && bucket != nil {
+			bucket = bucket.Bucket([]byte(path[0]))
+			path = path[1:]
+		}
+	}
+
+	if bucket == nil {
+		return nil, notExist
+	} else {
+		return bucket, nil
 	}
 }
 
-func CreateBucket(bucket string) error {
+func bucketCreator(tx *bolt.Tx, path []string) (b *bolt.Bucket, err error) {
+	if len(path) == 0 {
+		return nil, errors.New("cannot create empty bucket")
+	} else {
+		bucket, err := tx.CreateBucketIfNotExists([]byte(path[0]))
+		if err != nil {
+			return nil, err
+		}
+		path = path[1:]
+		for len(path) > 0 {
+			bucket, err = bucket.CreateBucketIfNotExists([]byte(path[0]))
+			if err != nil {
+				return nil, err
+			}
+			path = path[1:]
+		}
+
+		return bucket, nil
+	}
+}
+
+func CreateBucket(path []string, bucket string) error {
 	err := botDB.db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(bucket))
 		return err
@@ -59,53 +87,54 @@ func CreateBucket(bucket string) error {
 	return err
 }
 
-func AddValue(bucket string, key string, value []byte) error {
-	if !CheckIfBucketExists(bucket) {
-		return errors.New("bucket does not exist")
-	}
-
+func AddValue(path []string, key string, value []byte) error {
 	err := botDB.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(bucket))
-		err := b.Put([]byte(key), value)
+		b, err := bucketFinder(tx, path)
+		if err != nil {
+			return err
+		}
+		err = b.Put([]byte(key), value)
 		return err
 	})
 
 	if err != nil {
 		botDB.logger.WithError(err).WithFields(log.Fields{
-			"bucket": bucket,
-			"key":    key,
-			"value":  value,
+			"path":  path,
+			"key":   key,
+			"value": value,
 		}).Error("cannot update database")
 	}
 
 	return err
 }
 
-func ReadValue(bucket string, key string) (value []byte, err error) {
+func ReadValue(path []string, key string) (value []byte, err error) {
 	err = botDB.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(bucket))
+		b, err := bucketFinder(tx, path)
+		if err != nil {
+			return err
+		}
 		value = b.Get([]byte(key))
 		return nil
 	})
 
 	if err != nil {
 		botDB.logger.WithError(err).WithFields(log.Fields{
-			"bucket": bucket,
-			"key":    key,
+			"path": path,
+			"key":  key,
 		}).Error("cannot read database")
 	}
 
 	return value, err
 }
 
-func GetAllKeysValues(bucket string) (keys [][]byte, values [][]byte, err error) {
-	if !CheckIfBucketExists(bucket) {
-		return nil, nil, errors.New("bucket does not exist")
-	}
-
+func GetAllKeysValues(path []string) (keys [][]byte, values [][]byte, err error) {
 	err = botDB.db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
-		b := tx.Bucket([]byte(bucket))
+		b, err := bucketFinder(tx, path)
+		if err != nil {
+			return err
+		}
 
 		c := b.Cursor()
 
@@ -119,7 +148,7 @@ func GetAllKeysValues(bucket string) (keys [][]byte, values [][]byte, err error)
 
 	if err != nil {
 		botDB.logger.WithError(err).WithFields(log.Fields{
-			"bucket": bucket,
+			"path": path,
 		}).Error("cannot get keys or values in this bucket")
 	}
 
