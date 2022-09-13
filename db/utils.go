@@ -93,14 +93,14 @@ func CheckBucketExists(path []string) (exists bool) {
 	return exists
 }
 
-func CreateBucket(path []string, bucket string) error {
+func CreateBucket(path []string) error {
 	err := botDB.db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte(bucket))
+		_, err := bucketCreator(tx, path)
 		return err
 	})
 
 	if err != nil {
-		botDB.logger.WithError(err).WithField("bucket", bucket).Error("Cannot create bucket")
+		botDB.logger.WithError(err).WithField("path", path).Error("cannot create bucket at path")
 	}
 
 	return err
@@ -128,6 +128,7 @@ func AddValue(path []string, key string, value []byte) error {
 }
 
 func ReadValue(path []string, key string) (value []byte, err error) {
+	// returns nil if key doesn't exist or is a nested bucket
 	err = botDB.db.View(func(tx *bolt.Tx) error {
 		b, err := bucketFinder(tx, path)
 		if err != nil {
