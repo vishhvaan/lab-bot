@@ -74,6 +74,25 @@ func bucketCreator(tx *bolt.Tx, path []string) (b *bolt.Bucket, err error) {
 	}
 }
 
+func CheckBucketExists(path []string) (exists bool) {
+	err := botDB.db.View(func(tx *bolt.Tx) error {
+		b, err := bucketFinder(tx, path)
+		if b != nil {
+			exists = true
+			return nil
+		}
+		return err
+	})
+
+	if err != nil {
+		botDB.logger.WithError(err).WithFields(log.Fields{
+			"path": path,
+		}).Error("cannot check if bucket exists")
+	}
+
+	return exists
+}
+
 func CreateBucket(path []string, bucket string) error {
 	err := botDB.db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(bucket))
@@ -130,7 +149,6 @@ func ReadValue(path []string, key string) (value []byte, err error) {
 
 func GetAllKeysValues(path []string) (keys [][]byte, values [][]byte, err error) {
 	err = botDB.db.View(func(tx *bolt.Tx) error {
-		// Assume bucket exists and has keys
 		b, err := bucketFinder(tx, path)
 		if err != nil {
 			return err
