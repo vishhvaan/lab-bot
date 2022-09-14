@@ -14,90 +14,59 @@ import (
 )
 
 type ControllerSchedule struct {
-	Logger   *log.Entry
-	onSched  *Schedule
-	offSched *Schedule
+	Logger *log.Entry
+	Sched  map[string]*Schedule
 }
 
-func (cs *ControllerSchedule) ContSetOn(cronSched string, channel string, keyword string, m chan slack.MessageInfo, c chan slack.CommandInfo) (err error) {
-	if cs.onSched != nil && cs.onSched.scheduler != nil && cs.onSched.scheduler.IsRunning() {
-		return errors.New("there exists a scheduled on task")
+func (cs *ControllerSchedule) ContSet(cronSched string, command slack.CommandInfo, m chan slack.MessageInfo, c chan slack.CommandInfo) (err error) {
+	powerVal := command.Fields[1]
+	if cs.Sched[powerVal] != nil && cs.Sched[powerVal].scheduler != nil && cs.Sched[powerVal].scheduler.IsRunning() {
+		return errors.New("there exists a scheduled " + powerVal + " task")
 	} else {
-		s, err := cs.contSet(cronSched, channel, keyword, m, c, "on")
+		_, err = cron.ParseStandard(cronSched)
+		if err != nil {
+			return err
+		}
+
+		s := gocron.NewScheduler(time.Now().Local().Location())
+
+		name := command.Fields[0] + " " + command.Fields[1]
+		id := generateID()
+		s.Cron(cronSched).Tag(powerVal).Do(func(m chan slack.MessageInfo, c chan slack.CommandInfo, command slack.CommandInfo, id string, name string, channel string) {
+			t := "[" + id + "] Executing " + name
+			m <- slack.MessageInfo{
+				ChannelID: channel,
+				Text:      t,
+			}
+			c <- command
+		}, m, c, command, id, name, command.Channel)
+		s.StartAsync()
+
+		sch := &Schedule{
+			id:        id,
+			name:      name,
+			cronExp:   cronSched,
+			command:   command,
+			scheduler: s,
+			logger:    cs.Logger.WithField("job", name),
+		}
+
 		if err == nil {
-			cs.onSched = s
+			cs.Sched[powerVal] = sch
 		}
 		return err
 	}
 }
 
-func (cs *ControllerSchedule) ContSetOff(cronSched string, channel string, keyword string, m chan slack.MessageInfo, c chan slack.CommandInfo) (err error) {
-	if cs.offSched != nil && cs.offSched.scheduler != nil && cs.offSched.scheduler.IsRunning() {
-		return errors.New("there exists a scheduled off task")
-	} else {
-		s, err := cs.contSet(cronSched, channel, keyword, m, c, "off")
-		if err == nil {
-			cs.offSched = s
-		}
-		return err
-	}
-}
-
-func (cs *ControllerSchedule) contSet(cronSched string, channel string, keyword string, m chan slack.MessageInfo, c chan slack.CommandInfo, powerVal string) (sched *Schedule, err error) {
-	_, err = cron.ParseStandard(cronSched)
-	if err != nil {
-		return nil, err
-	}
-
-	s := gocron.NewScheduler(time.Now().Local().Location())
-	command := slack.CommandInfo{
-		Fields:  []string{keyword, powerVal},
-		Channel: channel,
-	}
-
-	name := keyword + " " + powerVal
-	id := generateID()
-	s.Cron(cronSched).Tag(powerVal).Do(func(m chan slack.MessageInfo, c chan slack.CommandInfo, command slack.CommandInfo, id string, name string, channel string) {
-		t := "[" + id + "] Executing " + name
-		m <- slack.MessageInfo{
-			ChannelID: channel,
-			Text:      t,
-		}
-		c <- command
-	}, m, c, command, id, name, channel)
-	s.StartAsync()
-
-	sch := &Schedule{
-		id:        id,
-		name:      name,
-		cronExp:   cronSched,
-		channel:   channel,
-		scheduler: s,
-		logger:    cs.Logger.WithField("job", name),
-	}
-	// schedChan <- sch
-	return sch, nil
-}
-
-func (cs *ControllerSchedule) ContRemoveOn() (err error) {
-	if cs.onSched != nil && cs.onSched.scheduler != nil && cs.onSched.scheduler.IsRunning() {
-		cs.onSched.scheduler.Stop()
+func (cs *ControllerSchedule) ContRemove(command slack.CommandInfo) (err error) {
+	powerVal := command.Fields[1]
+	if cs.Sched[powerVal] != nil && cs.Sched[powerVal].scheduler != nil && cs.Sched[powerVal].scheduler.IsRunning() {
+		cs.Sched[powerVal].scheduler.Stop()
 		// schedChan <- cs.onSched
-		cs.onSched = nil
+		delete(cs.Sched, powerVal)
 		return nil
 	} else {
-		return errors.New("there is no scheduled on task")
-	}
-}
-
-func (cs *ControllerSchedule) ContRemoveOff() (err error) {
-	if cs.offSched != nil && cs.offSched.scheduler != nil && cs.offSched.scheduler.IsRunning() {
-		cs.offSched.scheduler.Stop()
-		// schedChan <- cs.offSched
-		cs.offSched = nil
-		return nil
-	} else {
-		return errors.New("there is no scheduled off task")
+		return errors.New("there is no scheduled " + powerVal + " task")
 	}
 }
 
@@ -110,30 +79,19 @@ func (cs *ControllerSchedule) ContGetSchedulingStatus() string {
 		return "*Scheduling*: " + message
 	}
 
-	if cs.onSched != nil && cs.onSched.scheduler != nil && cs.onSched.scheduler.IsRunning() {
-		status.WriteString("*Scheduled On*: ")
-		onText, err := exprDesc.ToDescription(cs.onSched.cronExp, crondesc.Locale_en)
-		if err != nil {
-			message := "could not generate plain text for scheduled on"
-			cs.Logger.WithField("err", err).Error(message)
-			status.WriteString(message)
-		} else {
-			status.WriteString(onText)
+	for key, schedule := range cs.Sched {
+		if schedule != nil && schedule.scheduler != nil && schedule.scheduler.IsRunning() {
+			status.WriteString("*Scheduled " + strings.Title(key) + "*: ")
+			onText, err := exprDesc.ToDescription(schedule.cronExp, crondesc.Locale_en)
+			if err != nil {
+				message := "could not generate plain text for scheduled " + key
+				cs.Logger.WithField("err", err).Error(message)
+				status.WriteString(message)
+			} else {
+				status.WriteString(onText)
+			}
+			status.WriteString("\n")
 		}
-		status.WriteString("\n")
-	}
-
-	if cs.offSched != nil && cs.offSched.scheduler != nil && cs.offSched.scheduler.IsRunning() {
-		status.WriteString("*Scheduled Off*: ")
-		onText, err := exprDesc.ToDescription(cs.offSched.cronExp, crondesc.Locale_en)
-		if err != nil {
-			message := "could not generate plain text for scheduled off"
-			cs.Logger.WithField("err", err).Error(message)
-			status.WriteString(message)
-		} else {
-			status.WriteString(onText)
-		}
-		status.WriteString("\n")
 	}
 
 	if status.Len() == 0 {

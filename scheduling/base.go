@@ -17,7 +17,7 @@ type Schedule struct {
 	id        string
 	name      string
 	cronExp   string
-	channel   string
+	command   slack.CommandInfo
 	scheduler *gocron.Scheduler
 	logger    *log.Entry
 	schedule

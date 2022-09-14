@@ -176,8 +176,8 @@ func (cj *controllerJob) commandProcessor(c slack.CommandInfo) {
 
 func (cj *controllerJob) scheduleHandler(c slack.CommandInfo) {
 	schedulingActions := map[string]action{
-		"on":     cj.onSched,
-		"off":    cj.offSched,
+		"on":     cj.sched,
+		"off":    cj.sched,
 		"status": cj.sendSchedulingStatus,
 	}
 	if len(c.Fields) == 2 {
@@ -194,47 +194,28 @@ func (cj *controllerJob) scheduleHandler(c slack.CommandInfo) {
 	}
 }
 
-func (cj *controllerJob) onSched(c slack.CommandInfo) {
-	if len(c.Fields) >= 4 {
-		if c.Fields[3] == "set" && len(c.Fields) > 4 {
-			cronExp := strings.Join(c.Fields[4:], " ")
-			err := cj.scheduling.ContSetOn(cronExp, c.Channel, cj.keyword, cj.messenger, cj.commander)
-			if err != nil {
-				cj.errorMsg(c.Fields, c.Channel, err.Error())
-			} else {
-				cj.sendMsg(c.Channel, "_Successfully scheduled power on task._\n"+cj.scheduling.ContGetSchedulingStatus())
-			}
-			return
-		} else if c.Fields[3] == "remove" && len(c.Fields) == 4 {
-			err := cj.scheduling.ContRemoveOn()
-			if err != nil {
-				cj.errorMsg(c.Fields, c.Channel, err.Error())
-			} else {
-				cj.sendMsg(c.Channel, "_Successfully removed power on task._\n"+cj.scheduling.ContGetSchedulingStatus())
-			}
-			return
-		}
+func (cj *controllerJob) sched(c slack.CommandInfo) {
+	powerVal := c.Fields[2]
+	command := slack.CommandInfo{
+		Fields:  []string{cj.keyword, powerVal},
+		Channel: c.Channel,
 	}
-	cj.errorMsg(c.Fields, c.Channel, "Malformed scheduling command")
-}
-
-func (cj *controllerJob) offSched(c slack.CommandInfo) {
 	if len(c.Fields) >= 4 {
 		if c.Fields[3] == "set" && len(c.Fields) > 4 {
 			cronExp := strings.Join(c.Fields[4:], " ")
-			err := cj.scheduling.ContSetOff(cronExp, c.Channel, cj.keyword, cj.messenger, cj.commander)
+			err := cj.scheduling.ContSet(cronExp, command, cj.messenger, cj.commander)
 			if err != nil {
 				cj.errorMsg(c.Fields, c.Channel, err.Error())
 			} else {
-				cj.sendMsg(c.Channel, "_Successfully scheduled power off task._\n"+cj.scheduling.ContGetSchedulingStatus())
+				cj.sendMsg(c.Channel, "_Successfully scheduled power "+powerVal+" task._\n"+cj.scheduling.ContGetSchedulingStatus())
 			}
 			return
 		} else if c.Fields[3] == "remove" && len(c.Fields) == 4 {
-			err := cj.scheduling.ContRemoveOff()
+			err := cj.scheduling.ContRemove(command)
 			if err != nil {
 				cj.errorMsg(c.Fields, c.Channel, err.Error())
 			} else {
-				cj.sendMsg(c.Channel, "_Successfully removed power off task._\n"+cj.scheduling.ContGetSchedulingStatus())
+				cj.sendMsg(c.Channel, "_Successfully removed power "+powerVal+" task._\n"+cj.scheduling.ContGetSchedulingStatus())
 			}
 			return
 		}
