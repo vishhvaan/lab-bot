@@ -84,7 +84,7 @@ func (st *ScheduleTracker) Reciever() {
 	}
 }
 
-func generateID() string {
+func GenerateID() string {
 	b := make([]byte, idLength)
 	for i := range b {
 		b[i] = idLetters[rand.Intn(len(idLetters))]

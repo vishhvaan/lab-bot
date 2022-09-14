@@ -203,7 +203,7 @@ func (cj *controllerJob) sched(c slack.CommandInfo) {
 	if len(c.Fields) >= 4 {
 		if c.Fields[3] == "set" && len(c.Fields) > 4 {
 			cronExp := strings.Join(c.Fields[4:], " ")
-			err := cj.scheduling.ContSet(cronExp, command, cj.messenger, cj.commander)
+			err := cj.scheduling.ContSet(scheduling.GenerateID(), cronExp, command, cj.messenger, cj.commander)
 			if err != nil {
 				cj.errorMsg(c.Fields, c.Channel, err.Error())
 			} else {
