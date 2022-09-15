@@ -173,3 +173,17 @@ func GetAllKeysValues(path []string) (keys [][]byte, values [][]byte, err error)
 
 	return keys, values, err
 }
+
+func IncrementBucketInteger(path []string) (i int, err error) {
+	err = botDB.db.Update(func(tx *bolt.Tx) error {
+		b, err := bucketFinder(tx, path)
+		if err != nil {
+			return err
+		}
+		i64, err := b.NextSequence()
+		i = int(i64)
+		return err
+	})
+
+	return i, err
+}
