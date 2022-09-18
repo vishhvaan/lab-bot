@@ -13,10 +13,15 @@ import (
 const idLength = 5
 const idLetters = "abcdefghijklmnopqrstuvwxyz0123456789"
 
+type scheduleRecord struct {
+	id      string
+	name    string
+	cronExp string
+	command slack.CommandInfo
+}
+
 type Schedule struct {
-	id        string
-	name      string
-	cronExp   string
+	scheduleRecord
 	command   slack.CommandInfo
 	scheduler *gocron.Scheduler
 	logger    *log.Entry

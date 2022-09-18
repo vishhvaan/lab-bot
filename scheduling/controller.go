@@ -42,10 +42,12 @@ func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack
 		s.StartAsync()
 
 		sch := &Schedule{
-			id:        id,
-			name:      name,
-			cronExp:   cronSched,
-			command:   command,
+			scheduleRecord: scheduleRecord{
+				id:      id,
+				name:    name,
+				cronExp: cronSched,
+				command: command,
+			},
 			scheduler: s,
 			logger:    cs.Logger.WithField("job", name),
 		}
