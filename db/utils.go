@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+	"os"
 	"path"
 
 	log "github.com/sirupsen/logrus"
@@ -27,7 +28,11 @@ func Open() {
 	if err != nil {
 		botDB.logger.WithError(err).Panic("database could not be opened")
 	} else {
-		botDB.logger.Info("opened database")
+		if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+			botDB.logger.Info("Created database")
+		} else {
+			botDB.logger.Info("Opened database")
+		}
 	}
 	defer botDB.db.Close()
 }
