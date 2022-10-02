@@ -15,11 +15,10 @@ import (
 )
 
 type slackClient struct {
-	api       *goslack.Client
-	client    *socketmode.Client
-	logger    *log.Entry
-	members   map[string]config.Member
-	commander chan CommandInfo
+	api     *goslack.Client
+	client  *socketmode.Client
+	logger  *log.Entry
+	members map[string]config.Member
 	slackBot
 }
 
@@ -28,8 +27,7 @@ type slackBot struct {
 	botChannelID string
 }
 
-func CreateClient(secrets map[string]string, members map[string]config.Member, botChannel string,
-	c chan CommandInfo) (sc *slackClient) {
+func CreateClient(secrets map[string]string, members map[string]config.Member, botChannel string) (sc *slackClient) {
 	logFolder := logging.CreateLogFolder()
 	logFileInternal := logging.CreateLogFile(logFolder, "slack_internal")
 	slackLogger := logging.CreateNewLogger("slack", "slack")
@@ -77,11 +75,10 @@ func CreateClient(secrets map[string]string, members map[string]config.Member, b
 	}
 
 	sc = &slackClient{
-		api:       api,
-		client:    client,
-		logger:    slackLogger,
-		members:   members,
-		commander: c,
+		api:     api,
+		client:  client,
+		logger:  slackLogger,
+		members: members,
 		slackBot: slackBot{
 			bot:          bot,
 			botChannelID: botChannelID,

@@ -7,6 +7,8 @@ import (
 	goslack "github.com/slack-go/slack"
 )
 
+var MessageChan = make(chan MessageInfo)
+
 type MessageInfo struct {
 	Type      string
 	Timestamp string
@@ -15,9 +17,9 @@ type MessageInfo struct {
 	Text      string
 }
 
-func (sc *slackClient) MessageProcessor(m chan MessageInfo) {
+func (sc *slackClient) MessageProcessor() {
 	var err error
-	for message := range m {
+	for message := range MessageChan {
 		if message.Type == "react" {
 			err = sc.React(message)
 		} else {

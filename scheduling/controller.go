@@ -18,7 +18,7 @@ type ControllerSchedule struct {
 	Sched  map[string]*Schedule
 }
 
-func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack.CommandInfo, m chan slack.MessageInfo, c chan slack.CommandInfo) (err error) {
+func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack.CommandInfo) (err error) {
 	powerVal := command.Fields[1]
 	if cs.Sched[powerVal] != nil && cs.Sched[powerVal].scheduler != nil && cs.Sched[powerVal].scheduler.IsRunning() {
 		return errors.New("there exists a scheduled " + powerVal + " task")
@@ -31,14 +31,14 @@ func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack
 		s := gocron.NewScheduler(time.Now().Local().Location())
 
 		name := command.Fields[0] + " " + command.Fields[1]
-		s.Cron(cronSched).Tag(powerVal).Do(func(m chan slack.MessageInfo, c chan slack.CommandInfo, command slack.CommandInfo, id string, name string, channel string) {
+		s.Cron(cronSched).Tag(powerVal).Do(func(command slack.CommandInfo, id string, name string, channel string) {
 			t := "[" + id + "] Executing " + name
-			m <- slack.MessageInfo{
+			slack.MessageChan <- slack.MessageInfo{
 				ChannelID: channel,
 				Text:      t,
 			}
-			c <- command
-		}, m, c, command, id, name, command.Channel)
+			slack.CommandChan <- command
+		}, command, id, name, command.Channel)
 		s.StartAsync()
 
 		sch := &Schedule{

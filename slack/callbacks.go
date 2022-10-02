@@ -21,7 +21,7 @@ func (sc *slackClient) commandInterpreter(ev *slackevents.AppMentionEvent) {
 			f := basicResponses[command]
 			f(sc, ev, fields)
 		} else {
-			sc.commander <- CommandInfo{
+			CommandChan <- CommandInfo{
 				Fields:    fields,
 				Channel:   ev.Channel,
 				TimeStamp: ev.TimeStamp,

@@ -50,18 +50,15 @@ func main() {
 
 	db.Open()
 
-	messages := make(chan slack.MessageInfo)
-	commands := make(chan slack.CommandInfo)
-
-	slackClient := slack.CreateClient(secrets, members, botChannel, commands)
-	go slackClient.MessageProcessor(messages)
+	slackClient := slack.CreateClient(secrets, members, botChannel)
+	go slackClient.MessageProcessor()
 	go slackClient.EventProcessor()
 	go slackClient.RunSocketMode()
 
-	scheduleTracker := scheduling.CreateScheduleTracker(messages)
+	scheduleTracker := scheduling.CreateScheduleTracker()
 	go scheduleTracker.Reciever()
 
-	jobHandler := jobs.CreateHandler(messages, commands)
+	jobHandler := jobs.CreateHandler()
 	jobHandler.InitJobs()
 	jobHandler.CommandReceiver()
 }

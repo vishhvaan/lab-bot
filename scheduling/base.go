@@ -57,14 +57,13 @@ type ScheduleTracker struct {
 	logger    *log.Entry
 }
 
-func CreateScheduleTracker(m chan slack.MessageInfo) (st *ScheduleTracker) {
+func CreateScheduleTracker() (st *ScheduleTracker) {
 	schedules := make(map[string]*Schedule)
 
 	schedLogger := logging.CreateNewLogger("scheduling", "scheduling")
 
 	return &ScheduleTracker{
 		schedules: schedules,
-		messenger: m,
 		logger:    schedLogger,
 	}
 }

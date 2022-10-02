@@ -1,5 +1,7 @@
 package slack
 
+var CommandChan = make(chan CommandInfo)
+
 type CommandInfo struct {
 	Fields    []string
 	Channel   string
