@@ -7,10 +7,13 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/vishhvaan/lab-bot/db"
 	"github.com/vishhvaan/lab-bot/functions"
 	"github.com/vishhvaan/lab-bot/scheduling"
 	"github.com/vishhvaan/lab-bot/slack"
 )
+
+var ControllerScheduleBasePath = []string{"jobs", "controller"}
 
 type controllerJob struct {
 	labJob
@@ -48,6 +51,36 @@ func (cj *controllerJob) init() {
 	slack.MessageChan <- slack.MessageInfo{
 		Text: message,
 	}
+
+	if cj.checkCreateBucket() {
+
+	}
+}
+
+func (cj *controllerJob) checkCreateBucket() (exists bool) {
+	path := append(ControllerScheduleBasePath, cj.machineName, "scheduling")
+	exists = db.CheckBucketExists(path)
+	if !exists {
+		err := db.CreateBucket(path)
+		if err != nil {
+			cj.logger.WithFields(log.Fields{
+				"err":  err,
+				"path": path,
+			}).Error("cannot create bucket")
+		}
+	}
+
+	return exists
+}
+
+func (cj *controllerJob) loadDBSched() (err error) {
+
+	return err
+}
+
+func (cj *controllerJob) writeDBSched() (err error) {
+
+	return err
 }
 
 func (cj *controllerJob) TurnOn(c slack.CommandInfo) {
