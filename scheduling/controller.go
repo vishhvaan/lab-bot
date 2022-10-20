@@ -30,7 +30,7 @@ func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack
 
 		s := gocron.NewScheduler(time.Now().Local().Location())
 
-		name := command.Fields[0] + " " + command.Fields[1]
+		name := command.Fields[0] + " " + command.Fields[2]
 		s.Cron(cronSched).Tag(powerVal).Do(func(command slack.CommandInfo, id string, name string, channel string) {
 			t := "[" + id + "] Executing " + name
 			slack.MessageChan <- slack.MessageInfo{
@@ -100,4 +100,19 @@ func (cs *ControllerSchedule) ContGetSchedulingStatus() string {
 	}
 
 	return status.String()
+}
+
+func (cj *ControllerSchedule) LoadDBSched() (err error) {
+
+	return err
+}
+
+func (cj *ControllerSchedule) writeDBSched(s scheduleRecord) (err error) {
+
+	return err
+}
+
+func (cj *ControllerSchedule) deleteDBSched(s scheduleRecord) (err error) {
+
+	return err
 }

@@ -57,6 +57,11 @@ func (cj *controllerJob) init() {
 	}
 }
 
+func (cj *controllerJob) LoadDBSched() (err error) {
+
+	return err
+}
+
 func (cj *controllerJob) checkCreateBucket() (exists bool) {
 	path := append(ControllerScheduleBasePath, cj.machineName, "scheduling")
 	exists = db.CheckBucketExists(path)
@@ -71,16 +76,6 @@ func (cj *controllerJob) checkCreateBucket() (exists bool) {
 	}
 
 	return exists
-}
-
-func (cj *controllerJob) loadDBSched() (err error) {
-
-	return err
-}
-
-func (cj *controllerJob) writeDBSched() (err error) {
-
-	return err
 }
 
 func (cj *controllerJob) TurnOn(c slack.CommandInfo) {
@@ -229,14 +224,11 @@ func (cj *controllerJob) scheduleHandler(c slack.CommandInfo) {
 
 func (cj *controllerJob) sched(c slack.CommandInfo) {
 	powerVal := c.Fields[2]
-	command := slack.CommandInfo{
-		Fields:  []string{cj.keyword, powerVal},
-		Channel: c.Channel,
-	}
+	// keyword = c.Fields[0]
 	if len(c.Fields) >= 4 {
 		if c.Fields[3] == "set" && len(c.Fields) > 4 {
 			cronExp := strings.Join(c.Fields[4:], " ")
-			err := cj.scheduling.ContSet(scheduling.GenerateID(), cronExp, command)
+			err := cj.scheduling.ContSet(scheduling.GenerateID(), cronExp, c)
 			if err != nil {
 				cj.errorMsg(c.Fields, c.Channel, err.Error())
 			} else {
@@ -244,7 +236,7 @@ func (cj *controllerJob) sched(c slack.CommandInfo) {
 			}
 			return
 		} else if c.Fields[3] == "remove" && len(c.Fields) == 4 {
-			err := cj.scheduling.ContRemove(command)
+			err := cj.scheduling.ContRemove(c)
 			if err != nil {
 				cj.errorMsg(c.Fields, c.Channel, err.Error())
 			} else {
