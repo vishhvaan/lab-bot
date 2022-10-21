@@ -109,26 +109,26 @@ func (cs *ControllerSchedule) ContGetSchedulingStatus() string {
 	return status.String()
 }
 
-func (cj *ControllerSchedule) LoadDBSched() (err error) {
+func (cj *ControllerSchedule) LoadDBSched() (records []scheduleRecord, err error) {
 
 	return err
 }
 
-func (cs *ControllerSchedule) writeSchedtoDB(s scheduleRecord) (err error) {
-	buf, err := json.Marshal(s)
+func (cs *ControllerSchedule) writeSchedtoDB(record scheduleRecord) (err error) {
+	buf, err := json.Marshal(record)
 	if err != nil {
 		cs.Logger.WithFields(log.Fields{
 			"err":    err,
-			"record": s,
+			"record": record,
 		}).Error("cannot create convert struct to json")
 		return err
 	}
 
-	err = db.AddValue(cs.DbPath, s.id, buf)
+	err = db.AddValue(cs.DbPath, record.id, buf)
 	return err
 }
 
-func (cs *ControllerSchedule) deleteSchedfromDB(s scheduleRecord) (err error) {
+func (cs *ControllerSchedule) deleteSchedfromDB(record scheduleRecord) (err error) {
 
 	return err
 }

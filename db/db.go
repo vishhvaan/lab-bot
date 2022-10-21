@@ -153,6 +153,26 @@ func ReadValue(path []string, key string) (value []byte, err error) {
 	return value, err
 }
 
+func DeleteValue(path []string, key string) error {
+	err := botDB.db.Update(func(tx *bolt.Tx) error {
+		b, err := bucketFinder(tx, path)
+		if err != nil {
+			return err
+		}
+		err = b.Delete([]byte(key))
+		return err
+	})
+
+	if err != nil {
+		botDB.logger.WithError(err).WithFields(log.Fields{
+			"path": path,
+			"key":  key,
+		}).Error("cannot delete key from database")
+	}
+
+	return err
+}
+
 func GetAllKeysValues(path []string) (keys [][]byte, values [][]byte, err error) {
 	err = botDB.db.View(func(tx *bolt.Tx) error {
 		b, err := bucketFinder(tx, path)
