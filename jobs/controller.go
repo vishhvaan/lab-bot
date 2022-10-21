@@ -69,6 +69,33 @@ func (cj *controllerJob) checkCreateBucket() (exists bool) {
 	return exists
 }
 
+func (cj *controllerJob) LoadSchedsfromDB() (err error) {
+	records, err := cj.scheduling.LoadSchedsfromDB()
+	if err != nil {
+		message := "cannot load schedules from database"
+		slack.MessageChan <- slack.MessageInfo{
+			Text: message,
+		}
+		cj.logger.WithFields(log.Fields{
+			"err":  err,
+			"path": cj.scheduling.DbPath,
+		}).Error(message)
+		return err
+	}
+
+	for _, record := range records {
+		powerVal := record.Command.Fields[2]
+		e := cj.scheduling.ContSet(record.ID, record.CronExp, record.Command)
+		if e != nil {
+			cj.errorMsg(record.Command.Fields, record.Command.Channel, err.Error())
+			err = e
+		} else {
+			cj.sendMsg(record.Command.Channel, "_Loaded scheduled power "+powerVal+" task from the database._")
+		}
+	}
+	return err
+}
+
 func (cj *controllerJob) TurnOn(c slack.CommandInfo) {
 	if commandCheck(c, 2, slack.MessageChan, cj.logger) {
 		if cj.powerStatus {

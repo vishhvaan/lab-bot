@@ -14,10 +14,10 @@ const idLength = 5
 const idLetters = "abcdefghijklmnopqrstuvwxyz0123456789"
 
 type scheduleRecord struct {
-	id      string
-	name    string
-	cronExp string
-	command slack.CommandInfo
+	ID      string
+	Name    string
+	CronExp string
+	Command slack.CommandInfo
 }
 
 type Schedule struct {
@@ -81,9 +81,9 @@ func CreateScheduleTracker() (st *ScheduleTracker) {
 func (st *ScheduleTracker) Reciever() {
 	for sched := range schedChan {
 		if sched.scheduler.IsRunning() {
-			st.schedules[sched.id] = sched
+			st.schedules[sched.ID] = sched
 		} else {
-			delete(st.schedules, sched.id)
+			delete(st.schedules, sched.ID)
 		}
 	}
 }

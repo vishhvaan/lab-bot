@@ -45,10 +45,10 @@ func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack
 		s.StartAsync()
 
 		record := scheduleRecord{
-			id:      id,
-			name:    name,
-			cronExp: cronSched,
-			command: command,
+			ID:      id,
+			Name:    name,
+			CronExp: cronSched,
+			Command: command,
 		}
 		cs.writeSchedtoDB(record)
 
@@ -90,7 +90,7 @@ func (cs *ControllerSchedule) ContGetSchedulingStatus() string {
 	for key, schedule := range cs.Sched {
 		if schedule != nil && schedule.scheduler != nil && schedule.scheduler.IsRunning() {
 			status.WriteString("*Scheduled " + strings.Title(key) + "*: ")
-			onText, err := exprDesc.ToDescription(schedule.cronExp, crondesc.Locale_en)
+			onText, err := exprDesc.ToDescription(schedule.CronExp, crondesc.Locale_en)
 			if err != nil {
 				message := "could not generate plain text for scheduled " + key
 				cs.Logger.WithField("err", err).Error(message)
@@ -123,6 +123,11 @@ func (cs *ControllerSchedule) LoadSchedsfromDB() (records []scheduleRecord, err 
 }
 
 func (cs *ControllerSchedule) writeSchedtoDB(record scheduleRecord) (err error) {
+	value, err := db.ReadValue(cs.DbPath, record.ID)
+	if value == nil {
+		return err
+	}
+
 	buf, err := json.Marshal(record)
 	if err != nil {
 		cs.Logger.WithFields(log.Fields{
@@ -132,11 +137,11 @@ func (cs *ControllerSchedule) writeSchedtoDB(record scheduleRecord) (err error) 
 		return err
 	}
 
-	err = db.AddValue(cs.DbPath, record.id, buf)
+	err = db.AddValue(cs.DbPath, record.ID, buf)
 	return err
 }
 
 func (cs *ControllerSchedule) deleteSchedfromDB(record scheduleRecord) (err error) {
-	err = db.DeleteValue(cs.DbPath, record.id)
+	err = db.DeleteValue(cs.DbPath, record.ID)
 	return err
 }
