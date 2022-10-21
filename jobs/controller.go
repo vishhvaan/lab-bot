@@ -51,12 +51,8 @@ func (cj *controllerJob) init() {
 	}
 
 	cj.scheduling.DbPath = append([]string{"jobs", "controller"}, cj.name, "scheduling")
-	_ = cj.checkCreateBucket()
-}
+	cj.checkCreateBucket()
 
-func (cj *controllerJob) LoadDBSched() (err error) {
-
-	return err
 }
 
 func (cj *controllerJob) checkCreateBucket() (exists bool) {
@@ -223,7 +219,11 @@ func (cj *controllerJob) sched(c slack.CommandInfo) {
 	if len(c.Fields) >= 4 {
 		if c.Fields[3] == "set" && len(c.Fields) > 4 {
 			cronExp := strings.Join(c.Fields[4:], " ")
-			err := cj.scheduling.ContSet(scheduling.GenerateID(), cronExp, c)
+			id, err := db.IncrementBucketInteger(cj.scheduling.DbPath)
+			if err != nil {
+				cj.errorMsg(c.Fields, c.Channel, "couldn't get ID for schedule")
+			}
+			err = cj.scheduling.ContSet(fmt.Sprintf("%05d", id), cronExp, c)
 			if err != nil {
 				cj.errorMsg(c.Fields, c.Channel, err.Error())
 			} else {

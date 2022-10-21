@@ -109,9 +109,17 @@ func (cs *ControllerSchedule) ContGetSchedulingStatus() string {
 	return status.String()
 }
 
-func (cj *ControllerSchedule) LoadDBSched() (records []scheduleRecord, err error) {
-
-	return err
+func (cs *ControllerSchedule) LoadSchedsfromDB() (records []scheduleRecord, err error) {
+	_, values, err := db.GetAllKeysValues(cs.DbPath)
+	if err != nil {
+		return records, err
+	}
+	for _, value := range values {
+		var record scheduleRecord
+		err = json.Unmarshal(value, &record)
+		records = append(records, record)
+	}
+	return records, err
 }
 
 func (cs *ControllerSchedule) writeSchedtoDB(record scheduleRecord) (err error) {
