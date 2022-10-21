@@ -1,6 +1,7 @@
 package scheduling
 
 import (
+	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -10,12 +11,14 @@ import (
 	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/vishhvaan/lab-bot/db"
 	"github.com/vishhvaan/lab-bot/slack"
 )
 
 type ControllerSchedule struct {
 	Logger *log.Entry
 	Sched  map[string]*Schedule
+	DbPath []string
 }
 
 func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack.CommandInfo) (err error) {
@@ -41,15 +44,18 @@ func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack
 		}, command, id, name, command.Channel)
 		s.StartAsync()
 
+		record := scheduleRecord{
+			id:      id,
+			name:    name,
+			cronExp: cronSched,
+			command: command,
+		}
+		cs.writeSchedtoDB(record)
+
 		sch := &Schedule{
-			scheduleRecord: scheduleRecord{
-				id:      id,
-				name:    name,
-				cronExp: cronSched,
-				command: command,
-			},
-			scheduler: s,
-			logger:    cs.Logger.WithField("job", name),
+			scheduleRecord: record,
+			scheduler:      s,
+			logger:         cs.Logger.WithField("job", name),
 		}
 
 		if err == nil {
@@ -64,6 +70,7 @@ func (cs *ControllerSchedule) ContRemove(command slack.CommandInfo) (err error) 
 	if cs.Sched[powerVal] != nil && cs.Sched[powerVal].scheduler != nil && cs.Sched[powerVal].scheduler.IsRunning() {
 		cs.Sched[powerVal].scheduler.Stop()
 		// schedChan <- cs.onSched
+		cs.deleteSchedfromDB(cs.Sched[powerVal].scheduleRecord)
 		delete(cs.Sched, powerVal)
 		return nil
 	} else {
@@ -107,12 +114,21 @@ func (cj *ControllerSchedule) LoadDBSched() (err error) {
 	return err
 }
 
-func (cj *ControllerSchedule) writeDBSched(s scheduleRecord) (err error) {
+func (cs *ControllerSchedule) writeSchedtoDB(s scheduleRecord) (err error) {
+	buf, err := json.Marshal(s)
+	if err != nil {
+		cs.Logger.WithFields(log.Fields{
+			"err":    err,
+			"record": s,
+		}).Error("cannot create convert struct to json")
+		return err
+	}
 
+	err = db.AddValue(cs.DbPath, s.id, buf)
 	return err
 }
 
-func (cj *ControllerSchedule) deleteDBSched(s scheduleRecord) (err error) {
+func (cs *ControllerSchedule) deleteSchedfromDB(s scheduleRecord) (err error) {
 
 	return err
 }
