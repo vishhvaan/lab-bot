@@ -129,6 +129,6 @@ func (cs *ControllerSchedule) writeSchedtoDB(record scheduleRecord) (err error) 
 }
 
 func (cs *ControllerSchedule) deleteSchedfromDB(record scheduleRecord) (err error) {
-
+	err = db.DeleteValue(cs.DbPath, record.id)
 	return err
 }

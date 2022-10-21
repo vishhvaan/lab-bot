@@ -3,9 +3,9 @@ package slack
 var CommandChan = make(chan CommandInfo)
 
 type CommandInfo struct {
-	Fields    []string
-	Channel   string
-	TimeStamp string
+	Fields    []string `json:"fields"`
+	Channel   string   `json:"channel"`
+	TimeStamp string   `json:"timestamp"`
 }
 
 func (sc *slackClient) RunSocketMode() {

@@ -14,10 +14,10 @@ const idLength = 5
 const idLetters = "abcdefghijklmnopqrstuvwxyz0123456789"
 
 type scheduleRecord struct {
-	id      string
-	name    string
-	cronExp string
-	command slack.CommandInfo
+	id      string            `json:"id"`
+	name    string            `json:"name"`
+	cronExp string            `json:"cronExp"`
+	command slack.CommandInfo `json:"commandInfo"`
 }
 
 type Schedule struct {
