@@ -66,17 +66,18 @@ func bucketCreator(tx *bolt.Tx, path []string) (b *bolt.Bucket, err error) {
 	if len(path) == 0 {
 		return nil, errors.New("cannot create empty bucket")
 	} else {
-		bucket, err := tx.CreateBucketIfNotExists([]byte(path[0]))
+		p := path
+		bucket, err := tx.CreateBucketIfNotExists([]byte(p[0]))
 		if err != nil {
 			return nil, err
 		}
-		path = path[1:]
-		for len(path) > 0 {
-			bucket, err = bucket.CreateBucketIfNotExists([]byte(path[0]))
+		p = p[1:]
+		for len(p) > 0 {
+			bucket, err = bucket.CreateBucketIfNotExists([]byte(p[0]))
 			if err != nil {
 				return nil, err
 			}
-			path = path[1:]
+			p = p[1:]
 		}
 
 		botDB.logger.WithField("path", path).Info("Created bucket")

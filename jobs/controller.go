@@ -50,7 +50,7 @@ func (cj *controllerJob) init() {
 		Text: message,
 	}
 
-	cj.scheduling.DbPath = append([]string{"jobs", "controller"}, cj.name, "scheduling")
+	cj.scheduling.DbPath = append([]string{"jobs", "controller"}, cj.keyword, "scheduling")
 	cj.checkCreateBucket()
 
 }
