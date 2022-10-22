@@ -79,6 +79,8 @@ func bucketCreator(tx *bolt.Tx, path []string) (b *bolt.Bucket, err error) {
 			path = path[1:]
 		}
 
+		botDB.logger.WithField("path", path).Info("Created bucket")
+
 		return bucket, nil
 	}
 }
