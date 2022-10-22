@@ -49,6 +49,7 @@ func main() {
 	slack.CheckSecrets(secrets)
 
 	db.Open()
+	defer db.Close()
 
 	slackClient := slack.CreateClient(secrets, members, botChannel)
 	go slackClient.MessageProcessor()

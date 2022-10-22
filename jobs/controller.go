@@ -58,13 +58,7 @@ func (cj *controllerJob) init() {
 func (cj *controllerJob) checkCreateBucket() (exists bool) {
 	exists = db.CheckBucketExists(cj.scheduling.DbPath)
 	if !exists {
-		err := db.CreateBucket(cj.scheduling.DbPath)
-		if err != nil {
-			cj.logger.WithFields(log.Fields{
-				"err":  err,
-				"path": cj.scheduling.DbPath,
-			}).Error("cannot create bucket")
-		}
+		db.CreateBucket(cj.scheduling.DbPath)
 	}
 	return exists
 }

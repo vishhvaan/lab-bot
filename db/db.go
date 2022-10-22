@@ -26,7 +26,7 @@ func Open() {
 	var err error
 	botDB.db, err = bolt.Open(dbPath, 0600, nil)
 	if err != nil {
-		botDB.logger.WithError(err).Panic("database could not be opened")
+		botDB.logger.WithError(err).Panic("Database could not be opened")
 	} else {
 		if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 			botDB.logger.Info("Created database")
@@ -34,7 +34,11 @@ func Open() {
 			botDB.logger.Info("Opened database")
 		}
 	}
-	defer botDB.db.Close()
+}
+
+func Close() {
+	botDB.db.Close()
+	botDB.logger.Info("Closed database")
 }
 
 func bucketFinder(tx *bolt.Tx, path []string) (b *bolt.Bucket, err error) {
@@ -89,10 +93,13 @@ func CheckBucketExists(path []string) (exists bool) {
 		return err
 	})
 
-	if err != nil {
-		botDB.logger.WithError(err).WithFields(log.Fields{
-			"path": path,
-		}).Error("cannot check if bucket exists")
+	l := botDB.logger.WithError(err).WithFields(log.Fields{
+		"path": path,
+	})
+	if err.Error() == "bucket does not exist at path" {
+		l.Info("Bucket does not exist at path")
+	} else if err != nil {
+		l.Error("Cannot check if bucket exists")
 	}
 
 	return exists
@@ -105,7 +112,7 @@ func CreateBucket(path []string) error {
 	})
 
 	if err != nil {
-		botDB.logger.WithError(err).WithField("path", path).Error("cannot create bucket at path")
+		botDB.logger.WithError(err).WithField("path", path).Error("Cannot create bucket at path")
 	}
 
 	return err
@@ -126,7 +133,7 @@ func AddValue(path []string, key string, value []byte) error {
 			"path":  path,
 			"key":   key,
 			"value": value,
-		}).Error("cannot update database")
+		}).Error("Cannot update database")
 	}
 
 	return err
@@ -147,7 +154,7 @@ func ReadValue(path []string, key string) (value []byte, err error) {
 		botDB.logger.WithError(err).WithFields(log.Fields{
 			"path": path,
 			"key":  key,
-		}).Error("cannot read database")
+		}).Error("Cannot read database")
 	}
 
 	return value, err
@@ -167,7 +174,7 @@ func DeleteValue(path []string, key string) error {
 		botDB.logger.WithError(err).WithFields(log.Fields{
 			"path": path,
 			"key":  key,
-		}).Error("cannot delete key from database")
+		}).Error("Cannot delete key from database")
 	}
 
 	return err
@@ -193,7 +200,7 @@ func GetAllKeysValues(path []string) (keys [][]byte, values [][]byte, err error)
 	if err != nil {
 		botDB.logger.WithError(err).WithFields(log.Fields{
 			"path": path,
-		}).Error("cannot get keys or values in this bucket")
+		}).Error("Cannot get keys or values in this bucket")
 	}
 
 	return keys, values, err
