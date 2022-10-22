@@ -123,9 +123,11 @@ func (cs *ControllerSchedule) LoadSchedsfromDB() (records []scheduleRecord, err 
 	if err != nil {
 		return records, err
 	}
+
 	for _, value := range values {
 		var record scheduleRecord
 		err = json.Unmarshal(value, &record)
+		cs.Logger.WithField("id", record.ID).Info("Parsed schedule in database")
 		records = append(records, record)
 	}
 	return records, err

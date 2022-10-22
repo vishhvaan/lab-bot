@@ -52,7 +52,9 @@ func (cj *controllerJob) init() {
 
 	cj.scheduling.Sched = make(map[string]*scheduling.Schedule)
 	cj.scheduling.DbPath = append([]string{"jobs", "controller"}, cj.keyword, "scheduling")
-	cj.checkCreateBucket()
+	if cj.checkCreateBucket() {
+		cj.loadSchedsfromDB()
+	}
 
 }
 
@@ -64,7 +66,7 @@ func (cj *controllerJob) checkCreateBucket() (exists bool) {
 	return exists
 }
 
-func (cj *controllerJob) LoadSchedsfromDB() (err error) {
+func (cj *controllerJob) loadSchedsfromDB() (err error) {
 	records, err := cj.scheduling.LoadSchedsfromDB()
 	if err != nil {
 		message := "cannot load schedules from database"

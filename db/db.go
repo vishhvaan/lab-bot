@@ -99,10 +99,12 @@ func CheckBucketExists(path []string) (exists bool) {
 	l := botDB.logger.WithError(err).WithFields(log.Fields{
 		"path": path,
 	})
-	if err.Error() == "bucket does not exist at path" {
-		l.Info("Bucket does not exist at path")
-	} else if err != nil {
-		l.Error("Cannot check if bucket exists")
+	if err != nil {
+		if err.Error() == "bucket does not exist at path" {
+			l.Info("Bucket does not exist at path")
+		} else {
+			l.Error("Cannot check if bucket exists")
+		}
 	}
 
 	return exists
