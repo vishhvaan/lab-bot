@@ -22,7 +22,7 @@ type ControllerSchedule struct {
 }
 
 func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack.CommandInfo) (err error) {
-	powerVal := command.Fields[1]
+	powerVal := command.Fields[2]
 	if cs.Sched[powerVal] != nil && cs.Sched[powerVal].scheduler != nil && cs.Sched[powerVal].scheduler.IsRunning() {
 		return errors.New("there exists a scheduled " + powerVal + " task")
 	} else {
@@ -50,7 +50,16 @@ func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack
 			CronExp: cronSched,
 			Command: command,
 		}
-		cs.writeSchedtoDB(record)
+		err = cs.writeSchedtoDB(record)
+		l := cs.Logger.WithFields(log.Fields{
+			"id":   id,
+			"name": name,
+		})
+		if err != nil {
+			l.WithError(err).Error("Cannot add schedule to db")
+		} else {
+			l.Info("Added schedule to db")
+		}
 
 		sch := &Schedule{
 			scheduleRecord: record,
@@ -133,7 +142,7 @@ func (cs *ControllerSchedule) writeSchedtoDB(record scheduleRecord) (err error) 
 		cs.Logger.WithFields(log.Fields{
 			"err":    err,
 			"record": record,
-		}).Error("cannot create convert struct to json")
+		}).Error("Cannot create convert struct to json")
 		return err
 	}
 
