@@ -21,7 +21,7 @@ type ControllerSchedule struct {
 	DbPath []string
 }
 
-func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack.CommandInfo) (err error) {
+func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack.CommandInfo, newSched bool) (err error) {
 	powerVal := command.Fields[2]
 	if cs.Sched[powerVal] != nil && cs.Sched[powerVal].scheduler != nil && cs.Sched[powerVal].scheduler.IsRunning() {
 		return errors.New("there exists a scheduled " + powerVal + " task")
@@ -50,15 +50,18 @@ func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack
 			CronExp: cronSched,
 			Command: command,
 		}
-		err = cs.writeSchedtoDB(record)
-		l := cs.Logger.WithFields(log.Fields{
-			"id":   id,
-			"name": name,
-		})
-		if err != nil {
-			l.WithError(err).Error("Cannot add schedule to db")
-		} else {
-			l.Info("Added schedule to db")
+
+		if newSched {
+			err = cs.writeSchedtoDB(record)
+			l := cs.Logger.WithFields(log.Fields{
+				"id":   id,
+				"name": name,
+			})
+			if err != nil {
+				l.WithError(err).Error("Cannot add schedule to db")
+			} else {
+				l.Info("Added schedule to db")
+			}
 		}
 
 		sch := &Schedule{
@@ -75,11 +78,17 @@ func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack
 }
 
 func (cs *ControllerSchedule) ContRemove(command slack.CommandInfo) (err error) {
-	powerVal := command.Fields[1]
+	powerVal := command.Fields[2]
 	if cs.Sched[powerVal] != nil && cs.Sched[powerVal].scheduler != nil && cs.Sched[powerVal].scheduler.IsRunning() {
 		cs.Sched[powerVal].scheduler.Stop()
 		// schedChan <- cs.onSched
-		cs.deleteSchedfromDB(cs.Sched[powerVal].scheduleRecord)
+
+		err = cs.deleteSchedfromDB(cs.Sched[powerVal].scheduleRecord)
+		if err != nil {
+			cs.Logger.WithField("id", cs.Sched[powerVal].scheduleRecord.ID).Error("Could not delete schedule from database")
+		} else {
+			cs.Logger.WithField("id", cs.Sched[powerVal].scheduleRecord.ID).Info("Deleted schedule from database")
+		}
 		delete(cs.Sched, powerVal)
 		return nil
 	} else {
@@ -135,7 +144,11 @@ func (cs *ControllerSchedule) LoadSchedsfromDB() (records []scheduleRecord, err 
 
 func (cs *ControllerSchedule) writeSchedtoDB(record scheduleRecord) (err error) {
 	value, err := db.ReadValue(cs.DbPath, record.ID)
-	if value == nil {
+	if value != nil {
+		cs.Logger.WithFields(log.Fields{
+			"path": cs.DbPath,
+			"id":   record.ID,
+		}).Error("Schedule already exists with this id")
 		return err
 	}
 

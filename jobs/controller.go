@@ -69,7 +69,7 @@ func (cj *controllerJob) checkCreateBucket() (exists bool) {
 func (cj *controllerJob) loadSchedsfromDB() (err error) {
 	records, err := cj.scheduling.LoadSchedsfromDB()
 	if err != nil {
-		message := "cannot load schedules from database"
+		message := "Cannot load schedules from database"
 		slack.MessageChan <- slack.MessageInfo{
 			Text: message,
 		}
@@ -82,12 +82,19 @@ func (cj *controllerJob) loadSchedsfromDB() (err error) {
 
 	for _, record := range records {
 		powerVal := record.Command.Fields[2]
-		e := cj.scheduling.ContSet(record.ID, record.CronExp, record.Command)
+		e := cj.scheduling.ContSet(record.ID, record.CronExp, record.Command, false)
 		if e != nil {
 			cj.errorMsg(record.Command.Fields, record.Command.Channel, err.Error())
 			err = e
 		} else {
-			cj.sendMsg(record.Command.Channel, "_Loaded scheduled power "+powerVal+" task from the database._")
+			slack.MessageChan <- slack.MessageInfo{
+				Text: "_Loaded scheduled power " + powerVal + " task from the database._",
+			}
+			cj.logger.WithFields(log.Fields{
+				"id":       record.ID,
+				"powerval": powerVal,
+				"path":     cj.scheduling.DbPath,
+			}).Info("Loaded scheduled task from the database")
 		}
 	}
 	return err
@@ -247,7 +254,7 @@ func (cj *controllerJob) sched(c slack.CommandInfo) {
 			if err != nil {
 				cj.errorMsg(c.Fields, c.Channel, "couldn't get ID for schedule")
 			}
-			err = cj.scheduling.ContSet(fmt.Sprintf("%05d", id), cronExp, c)
+			err = cj.scheduling.ContSet(fmt.Sprintf("%05d", id), cronExp, c, true)
 			if err != nil {
 				cj.errorMsg(c.Fields, c.Channel, err.Error())
 			} else {
