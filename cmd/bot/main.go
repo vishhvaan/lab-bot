@@ -12,7 +12,6 @@ import (
 	"github.com/vishhvaan/lab-bot/config"
 	"github.com/vishhvaan/lab-bot/db"
 	"github.com/vishhvaan/lab-bot/files"
-	"github.com/vishhvaan/lab-bot/functions"
 	"github.com/vishhvaan/lab-bot/jobs"
 	"github.com/vishhvaan/lab-bot/logging"
 	"github.com/vishhvaan/lab-bot/scheduling"
@@ -64,5 +63,5 @@ func main() {
 	jobHandler.InitJobs()
 	go jobHandler.CommandReceiver()
 
-	functions.CatchOSSignals()
+	CatchOSSignals()
 }
