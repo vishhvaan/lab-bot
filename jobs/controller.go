@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -12,6 +13,8 @@ import (
 	"github.com/vishhvaan/lab-bot/scheduling"
 	"github.com/vishhvaan/lab-bot/slack"
 )
+
+const controllerIDLen = 5
 
 type controllerJob struct {
 	labJob
@@ -250,11 +253,13 @@ func (cj *controllerJob) sched(c slack.CommandInfo) {
 	if len(c.Fields) >= 4 {
 		if c.Fields[3] == "set" && len(c.Fields) > 4 {
 			cronExp := strings.Join(c.Fields[4:], " ")
-			id, err := db.IncrementBucketInteger(cj.scheduling.DbPath)
+			idNum, err := db.IncrementBucketInteger(cj.scheduling.DbPath)
+			idString := strconv.Itoa(idNum) + c.Fields[0] + "controller"
+			id := functions.SHA256Sum(idString, controllerIDLen)
 			if err != nil {
 				cj.errorMsg(c.Fields, c.Channel, "couldn't get ID for schedule")
 			}
-			err = cj.scheduling.ContSet(fmt.Sprintf("%05d", id), cronExp, c, true)
+			err = cj.scheduling.ContSet(id, cronExp, c, true)
 			if err != nil {
 				cj.errorMsg(c.Fields, c.Channel, err.Error())
 			} else {

@@ -1,17 +1,12 @@
 package scheduling
 
 import (
-	"math/rand"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/go-co-op/gocron"
 	"github.com/vishhvaan/lab-bot/logging"
 	"github.com/vishhvaan/lab-bot/slack"
 )
-
-const idLength = 5
-const idLetters = "abcdefghijklmnopqrstuvwxyz0123456789"
 
 type scheduleRecord struct {
 	ID      string
@@ -86,12 +81,4 @@ func (st *ScheduleTracker) Reciever() {
 			delete(st.schedules, sched.ID)
 		}
 	}
-}
-
-func GenerateID() string {
-	b := make([]byte, idLength)
-	for i := range b {
-		b[i] = idLetters[rand.Intn(len(idLetters))]
-	}
-	return string(b)
 }
