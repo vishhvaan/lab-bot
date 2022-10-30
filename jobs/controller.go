@@ -14,7 +14,7 @@ import (
 	"github.com/vishhvaan/lab-bot/slack"
 )
 
-const controllerIDLen = 5
+const controllerIDLen = 6
 
 type controllerJob struct {
 	labJob
