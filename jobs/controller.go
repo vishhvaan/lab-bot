@@ -19,7 +19,7 @@ const controllerIDLen = 6
 type controllerJob struct {
 	labJob
 	machineName string
-	powerStatus bool
+	powerState  bool
 	lastPowerOn time.Time
 	device      any
 	customInit  func() (err error)
@@ -27,6 +27,7 @@ type controllerJob struct {
 	customOff   func() (err error)
 	logger      *log.Entry
 	scheduling  scheduling.ControllerSchedule
+	dbPath      []string
 	controller
 }
 
@@ -40,6 +41,9 @@ type controller interface {
 
 func (cj *controllerJob) init() {
 	cj.labJob.init()
+
+	cj.dbPath = append([]string{"jobs", "controller"}, cj.keyword)
+
 	var message string
 	err := cj.customInit()
 	if err != nil {
@@ -54,9 +58,12 @@ func (cj *controllerJob) init() {
 	}
 
 	cj.scheduling.Sched = make(map[string]*scheduling.Schedule)
-	cj.scheduling.DbPath = append([]string{"jobs", "controller"}, cj.keyword, "scheduling")
+	cj.scheduling.DbPath = append(cj.dbPath, "scheduling")
 	if cj.checkCreateBucket() {
-		cj.loadSchedsfromDB()
+		cj.loadSchedsFromDB()
+		cj.loadPowerStateFromDB()
+	} else {
+		cj.updatePowerStateInDB()
 	}
 
 }
@@ -69,7 +76,7 @@ func (cj *controllerJob) checkCreateBucket() (exists bool) {
 	return exists
 }
 
-func (cj *controllerJob) loadSchedsfromDB() (err error) {
+func (cj *controllerJob) loadSchedsFromDB() (err error) {
 	records, err := cj.scheduling.LoadSchedsfromDB()
 	if err != nil {
 		message := "Cannot load schedules from database"
@@ -103,9 +110,17 @@ func (cj *controllerJob) loadSchedsfromDB() (err error) {
 	return err
 }
 
+func (cj *controllerJob) updatePowerStateInDB() (err error) {
+	err = db.AddValue(cj.dbPath, "powerState", []byte(cj.powerState))
+}
+
+func (cj *controllerJob) loadPowerStateFromDB() (err error) {
+
+}
+
 func (cj *controllerJob) TurnOn(c slack.CommandInfo) {
 	if commandCheck(c, 2, slack.MessageChan, cj.logger) {
-		if cj.powerStatus {
+		if cj.powerState {
 			message := "The " + cj.machineName + " is already on"
 			go cj.logger.Info(message)
 			slack.MessageChan <- slack.MessageInfo{
@@ -122,7 +137,7 @@ func (cj *controllerJob) TurnOn(c slack.CommandInfo) {
 
 func (cj *controllerJob) TurnOff(c slack.CommandInfo) {
 	if commandCheck(c, 2, slack.MessageChan, cj.logger) {
-		if !cj.powerStatus {
+		if !cj.powerState {
 			message := "The " + cj.machineName + " is already off"
 			go cj.logger.Info(message)
 			slack.MessageChan <- slack.MessageInfo{
@@ -148,7 +163,7 @@ func (cj *controllerJob) slackPowerResponse(status bool, err error, c slack.Comm
 			Text: message,
 		}
 	} else {
-		cj.powerStatus = status
+		cj.powerState = status
 		message := "Turned " + statusString + " the " + cj.machineName
 		go cj.logger.Info(message)
 		if c.TimeStamp != "" {
@@ -168,7 +183,7 @@ func (cj *controllerJob) slackPowerResponse(status bool, err error, c slack.Comm
 func (cj *controllerJob) getPowerStatus(c slack.CommandInfo) {
 	if commandCheck(c, 2, slack.MessageChan, cj.logger) {
 		message := "The " + cj.machineName + " is "
-		if cj.powerStatus {
+		if cj.powerState {
 			uptime := time.Since(cj.lastPowerOn).Round(time.Second)
 			message += "*on*\nUptime: " + fmt.Sprint(uptime)
 		} else {
