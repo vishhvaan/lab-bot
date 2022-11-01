@@ -111,11 +111,27 @@ func (cj *controllerJob) loadSchedsFromDB() (err error) {
 }
 
 func (cj *controllerJob) updatePowerStateInDB() (err error) {
-	err = db.AddValue(cj.dbPath, "powerState", []byte(cj.powerState))
+	powerString := "off"
+	if cj.powerState {
+		powerString = "on"
+	}
+
+	err = db.AddValue(cj.dbPath, "powerState", []byte(powerString))
+
+	return err
 }
 
 func (cj *controllerJob) loadPowerStateFromDB() (err error) {
+	v, err := db.ReadValue(cj.dbPath, "powerState")
+	powerString := string(v[:])
 
+	if powerString == "on" {
+		cj.powerState = true
+	} else {
+		cj.powerState = false
+	}
+
+	return err
 }
 
 func (cj *controllerJob) TurnOn(c slack.CommandInfo) {
