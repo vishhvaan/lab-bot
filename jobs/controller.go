@@ -147,6 +147,7 @@ func (cj *controllerJob) TurnOn(c slack.CommandInfo) {
 			err := cj.customOn()
 			cj.lastPowerOn = time.Now()
 			cj.slackPowerResponse(true, err, c)
+			cj.updatePowerStateInDB()
 		}
 	}
 }
@@ -163,6 +164,7 @@ func (cj *controllerJob) TurnOff(c slack.CommandInfo) {
 		} else {
 			err := cj.customOff()
 			cj.slackPowerResponse(false, err, c)
+			cj.updatePowerStateInDB()
 		}
 	}
 }
