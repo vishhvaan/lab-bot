@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -116,7 +117,19 @@ func (cj *controllerJob) updatePowerStateInDB() (err error) {
 		powerString = "on"
 	}
 
+	buf, err := json.Marshal(cj.lastPowerOn)
+	if err != nil {
+		cj.logger.WithFields(log.Fields{
+			"err":         err,
+			"lastPowerOn": cj.lastPowerOn.String(),
+		}).Error("Cannot create convert power on time to json")
+		return err
+	}
+
 	err = db.AddValue(cj.dbPath, "powerState", []byte(powerString))
+	if err == nil {
+		err = db.AddValue(cj.dbPath, "lastPowerOn", buf)
+	}
 
 	return err
 }
@@ -129,6 +142,21 @@ func (cj *controllerJob) loadPowerStateFromDB() (err error) {
 		cj.powerState = true
 	} else {
 		cj.powerState = false
+	}
+
+	if err == nil {
+		var buf []byte
+		var lastPowerOn time.Time
+		buf, err = db.ReadValue(cj.dbPath, "lastPowerOn")
+		if err == nil {
+			err = json.Unmarshal(buf, &lastPowerOn)
+			if err != nil {
+				cj.logger.WithField("machine", cj.machineName).Error("Cannot unmarshal lastPowerOn from db")
+			} else {
+				cj.lastPowerOn = lastPowerOn
+			}
+		}
+
 	}
 
 	return err
