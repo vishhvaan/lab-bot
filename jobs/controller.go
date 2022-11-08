@@ -54,9 +54,7 @@ func (cj *controllerJob) init() {
 		message = cj.name + " loaded"
 		cj.logger.Info(message)
 	}
-	slack.MessageChan <- slack.MessageInfo{
-		Text: message,
-	}
+	slack.Message(message)
 
 	cj.scheduling.Sched = make(map[string]*scheduling.Schedule)
 	cj.scheduling.DbPath = append(cj.dbPath, "scheduling")
@@ -81,9 +79,7 @@ func (cj *controllerJob) loadSchedsFromDB() (err error) {
 	records, err := cj.scheduling.LoadSchedsfromDB()
 	if err != nil {
 		message := "Cannot load schedules from database"
-		slack.MessageChan <- slack.MessageInfo{
-			Text: message,
-		}
+		slack.Message(message)
 		cj.logger.WithFields(log.Fields{
 			"err":  err,
 			"path": cj.scheduling.DbPath,
@@ -98,9 +94,7 @@ func (cj *controllerJob) loadSchedsFromDB() (err error) {
 			cj.errorMsg(record.Command.Fields, record.Command.Channel, err.Error())
 			err = e
 		} else {
-			slack.MessageChan <- slack.MessageInfo{
-				Text: "_Loaded scheduled power " + powerVal + " task from the database._",
-			}
+			slack.Message("_Loaded scheduled power " + powerVal + " task from the database._")
 			cj.logger.WithFields(log.Fields{
 				"id":       record.ID,
 				"powerval": powerVal,
@@ -163,14 +157,11 @@ func (cj *controllerJob) loadPowerStateFromDB() (err error) {
 }
 
 func (cj *controllerJob) TurnOn(c slack.CommandInfo) {
-	if commandCheck(c, 2, slack.MessageChan, cj.logger) {
+	if commandCheck(c, 2, cj.logger) {
 		if cj.powerState {
 			message := "The " + cj.machineName + " is already on"
 			go cj.logger.Info(message)
-			slack.MessageChan <- slack.MessageInfo{
-				Text:      message,
-				ChannelID: c.Channel,
-			}
+			slack.PostMessage(c.Channel, message)
 		} else {
 			err := cj.customOn()
 			cj.lastPowerOn = time.Now()
@@ -181,14 +172,11 @@ func (cj *controllerJob) TurnOn(c slack.CommandInfo) {
 }
 
 func (cj *controllerJob) TurnOff(c slack.CommandInfo) {
-	if commandCheck(c, 2, slack.MessageChan, cj.logger) {
+	if commandCheck(c, 2, cj.logger) {
 		if !cj.powerState {
 			message := "The " + cj.machineName + " is already off"
 			go cj.logger.Info(message)
-			slack.MessageChan <- slack.MessageInfo{
-				Text:      message,
-				ChannelID: c.Channel,
-			}
+			slack.PostMessage(c.Channel, message)
 		} else {
 			err := cj.customOff()
 			cj.slackPowerResponse(false, err, c)
@@ -205,9 +193,7 @@ func (cj *controllerJob) slackPowerResponse(status bool, err error, c slack.Comm
 	if err != nil {
 		message := "Couldn't turn " + statusString + " the " + cj.machineName
 		go cj.logger.WithField("err", err).Error(message)
-		slack.MessageChan <- slack.MessageInfo{
-			Text: message,
-		}
+		slack.Message(message)
 	} else {
 		cj.powerState = status
 		message := "Turned " + statusString + " the " + cj.machineName

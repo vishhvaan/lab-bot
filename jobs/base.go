@@ -61,10 +61,7 @@ func (jh *JobHandler) CommandReceiver() {
 		if functions.Contains(functions.GetKeys(jh.jobs), k) {
 			jh.jobs[k].commandProcessor(command)
 		} else {
-			slack.MessageChan <- slack.MessageInfo{
-				Text:      "I couldn't find a response to your command.",
-				ChannelID: command.Channel,
-			}
+			slack.PostMessage(command.Channel, "I couldn't find a response to your command.")
 		}
 	}
 }
@@ -88,14 +85,11 @@ func (lj *labJob) disable() {
 
 func (lj *labJob) commandProcessor(c slack.CommandInfo) {}
 
-func commandCheck(c slack.CommandInfo, length int, m chan slack.MessageInfo, l *log.Entry) bool {
+func commandCheck(c slack.CommandInfo, length int, l *log.Entry) bool {
 	if len(c.Fields) > length {
 		message := "Your command has more parameters than necessary"
 		go l.Info(message)
-		m <- slack.MessageInfo{
-			Text:      message,
-			ChannelID: c.Channel,
-		}
+		slack.PostMessage(c.Channel, message)
 		return false
 	} else {
 		return true

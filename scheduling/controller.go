@@ -36,10 +36,7 @@ func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack
 		name := command.Fields[0] + " " + command.Fields[2]
 		s.Cron(cronSched).Tag(powerVal).Do(func(command slack.CommandInfo, id string, name string, channel string) {
 			t := "[" + id + "] Executing " + name
-			slack.MessageChan <- slack.MessageInfo{
-				ChannelID: channel,
-				Text:      t,
-			}
+			slack.PostMessage(channel, t)
 			slack.CommandChan <- command
 		}, command, id, name, command.Channel)
 		s.StartAsync()

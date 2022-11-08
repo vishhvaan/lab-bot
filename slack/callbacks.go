@@ -42,26 +42,17 @@ var basicResponses = map[string]cb{
 
 func hello(sc *slackClient, ev *slackevents.AppMentionEvent, fields []string) {
 	response := "Hello, " + sc.getUserName(ev.User) + "! :party_parrot:"
-	sc.PostMessage(MessageInfo{
-		ChannelID: ev.Channel,
-		Text:      response,
-	})
+	sc.PostMessage(ev.Channel, response)
 }
 
 func bye(sc *slackClient, ev *slackevents.AppMentionEvent, fields []string) {
 	response := "Goodbye, " + sc.getUserName(ev.User) + "! :wave:"
-	sc.PostMessage(MessageInfo{
-		ChannelID: ev.Channel,
-		Text:      response,
-	})
+	sc.PostMessage(ev.Channel, response)
 }
 
 func sysinfo(sc *slackClient, ev *slackevents.AppMentionEvent, fields []string) {
 	response := functions.GetSysInfo()
-	sc.PostMessage(MessageInfo{
-		ChannelID: ev.Channel,
-		Text:      response,
-	})
+	sc.PostMessage(ev.Channel, response)
 }
 
 func thanks(sc *slackClient, ev *slackevents.AppMentionEvent, fields []string) {
@@ -74,8 +65,5 @@ func thanks(sc *slackClient, ev *slackevents.AppMentionEvent, fields []string) {
 		":meow_code:",
 	}
 	response := allResponses[rand.Intn(len(allResponses))]
-	sc.PostMessage(MessageInfo{
-		ChannelID: ev.Channel,
-		Text:      response,
-	})
+	sc.PostMessage(ev.Channel, response)
 }
