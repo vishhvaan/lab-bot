@@ -199,21 +199,14 @@ func (cj *controllerJob) slackPowerResponse(status bool, err error, c slack.Comm
 		message := "Turned " + statusString + " the " + cj.machineName
 		go cj.logger.Info(message)
 		if c.TimeStamp != "" {
-			slack.MessageChan <- slack.MessageInfo{
-				Type:      "react",
-				Timestamp: c.TimeStamp,
-				ChannelID: c.Channel,
-				Text:      "ok_hand",
-			}
+			slack.React(c.TimeStamp, c.Channel, "ok_hand")
 		}
-		slack.MessageChan <- slack.MessageInfo{
-			Text: message,
-		}
+		slack.Message(message)
 	}
 }
 
 func (cj *controllerJob) getPowerStatus(c slack.CommandInfo) {
-	if commandCheck(c, 2, slack.MessageChan, cj.logger) {
+	if commandCheck(c, 2, cj.logger) {
 		message := "The " + cj.machineName + " is "
 		if cj.powerState {
 			uptime := time.Since(cj.lastPowerOn).Round(time.Second)
@@ -223,27 +216,18 @@ func (cj *controllerJob) getPowerStatus(c slack.CommandInfo) {
 		}
 		message += "\n" + cj.scheduling.ContGetSchedulingStatus()
 
-		slack.MessageChan <- slack.MessageInfo{
-			ChannelID: c.Channel,
-			Text:      message,
-		}
+		slack.PostMessage(c.Channel, message)
 	}
 }
 
 func (cj *controllerJob) errorMsg(fields []string, channel string, message string) {
 	go cj.logger.WithField("fields", fields).Warn(message)
-	slack.MessageChan <- slack.MessageInfo{
-		ChannelID: channel,
-		Text:      message,
-	}
+	slack.PostMessage(channel, message)
 }
 
 func (cj *controllerJob) sendMsg(channel string, message string) {
 	go cj.logger.Info(message)
-	slack.MessageChan <- slack.MessageInfo{
-		ChannelID: channel,
-		Text:      message,
-	}
+	slack.PostMessage(channel, message)
 }
 
 func (cj *controllerJob) commandProcessor(c slack.CommandInfo) {
@@ -267,10 +251,7 @@ func (cj *controllerJob) commandProcessor(c slack.CommandInfo) {
 			}
 		}
 	} else {
-		slack.MessageChan <- slack.MessageInfo{
-			ChannelID: c.Channel,
-			Text:      "The " + cj.name + " is disabled",
-		}
+		slack.PostMessage(c.Channel, "The "+cj.name+" is disabled")
 	}
 }
 
@@ -327,8 +308,5 @@ func (cj *controllerJob) sched(c slack.CommandInfo) {
 }
 
 func (cj *controllerJob) sendSchedulingStatus(c slack.CommandInfo) {
-	slack.MessageChan <- slack.MessageInfo{
-		ChannelID: c.Channel,
-		Text:      cj.scheduling.ContGetSchedulingStatus(),
-	}
+	slack.PostMessage(c.Channel, cj.scheduling.ContGetSchedulingStatus())
 }
