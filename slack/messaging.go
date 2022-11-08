@@ -7,8 +7,6 @@ import (
 	goslack "github.com/slack-go/slack"
 )
 
-var MessageChan = make(chan MessageInfo)
-
 type MessageInfo struct {
 	Type      string
 	Timestamp string
@@ -17,85 +15,57 @@ type MessageInfo struct {
 	Text      string
 }
 
-func (sc *slackClient) MessageProcessor() {
-	var err error
-	for message := range MessageChan {
-		if message.Type == "react" {
-			err = sc.React(message)
-		} else {
-			err = sc.Message(message)
-		}
-		if err != nil {
-			sc.logger.Error(err)
-		}
-	}
-}
-
-func (sc *slackClient) React(i MessageInfo) (err error) {
-	if i.Timestamp == "" {
+func (sc *slackClient) React(timestamp string, channelID string, text string) (err error) {
+	if timestamp == "" {
 		return errors.New("cannot react to nonexistent message")
-	} else if i.ChannelID == "" {
+	} else if channelID == "" {
 		return errors.New("need channelID to react")
-	} else if i.Text == "" {
+	} else if text == "" {
 		return errors.New("need something to react with")
 	} else {
-		sc.MsgReact(i)
+		err := sc.api.AddReaction(text, goslack.NewRefToMessage(channelID, timestamp))
+		if err != nil {
+			sc.logger.WithField("err", err).Error("Couldn't react to message on Slack.")
+		} else {
+			sc.logger.WithFields(log.Fields{
+				"text":    text,
+				"channel": sc.getChannelName(channelID),
+			}).Info("Sent reaction to Slack.")
+		}
 		return nil
 	}
 }
 
-func (sc *slackClient) Message(i MessageInfo) (err error) {
-	if i.Text == "" {
-		return errors.New("cannot send empty message")
-	}
-
-	if i.Channel == "" && i.ChannelID != "" {
-		sc.PostMessage(i)
-		return nil
-	} else if i.Channel != "" && i.ChannelID == "" {
-		sc.SendMessage(i)
-		return nil
-	} else {
-		sc.PostMessage(MessageInfo{
-			ChannelID: sc.botChannelID,
-			Text:      i.Text,
-		})
-		return nil
-	}
+func (sc *slackClient) Message(text string) (timestamp string, err error) {
+	timestamp, err = sc.PostMessage(sc.botChannelID, text)
+	return timestamp, err
 }
 
-func (sc *slackClient) SendMessage(i MessageInfo) {
-	_, _, _, err := sc.api.SendMessage(i.Channel, goslack.MsgOptionText(i.Text, false))
+func (sc *slackClient) SendMessage(channel string, text string) (timestamp string, err error) {
+	if text == "" {
+		return "", errors.New("cannot send empty message")
+	}
+	_, timestamp, _, err = sc.api.SendMessage(channel, goslack.MsgOptionText(text, false))
 	if err != nil {
 		sc.logger.WithField("err", err).Error("Couldn't send message on Slack.")
 	} else {
 		sc.logger.WithFields(log.Fields{
-			"text":    i.Text,
-			"channel": i.Channel,
+			"text":    text,
+			"channel": channel,
 		}).Info("Sent message to Slack.")
 	}
+	return timestamp, err
 }
 
-func (sc *slackClient) PostMessage(i MessageInfo) {
-	_, _, err := sc.api.PostMessage(i.ChannelID, goslack.MsgOptionText(i.Text, false))
+func (sc *slackClient) PostMessage(channelID string, text string) (timestamp string, err error) {
+	_, timestamp, err = sc.api.PostMessage(channelID, goslack.MsgOptionText(text, false))
 	if err != nil {
 		sc.logger.WithField("err", err).Error("Couldn't send message on Slack.")
 	} else {
 		sc.logger.WithFields(log.Fields{
-			"text":    i.Text,
-			"channel": sc.getChannelName(i.ChannelID),
+			"text":    text,
+			"channel": sc.getChannelName(channelID),
 		}).Info("Sent message to Slack.")
 	}
-}
-
-func (sc *slackClient) MsgReact(i MessageInfo) {
-	err := sc.api.AddReaction(i.Text, goslack.NewRefToMessage(i.ChannelID, i.Timestamp))
-	if err != nil {
-		sc.logger.WithField("err", err).Error("Couldn't react to message on Slack.")
-	} else {
-		sc.logger.WithFields(log.Fields{
-			"text":    i.Text,
-			"channel": sc.getChannelName(i.ChannelID),
-		}).Info("Sent reaction to Slack.")
-	}
+	return timestamp, err
 }

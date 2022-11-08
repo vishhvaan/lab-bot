@@ -51,10 +51,9 @@ func main() {
 	db.Open()
 	defer db.Close()
 
-	slackClient := slack.CreateClient(secrets, members, botChannel)
-	go slackClient.MessageProcessor()
-	go slackClient.EventProcessor()
-	go slackClient.RunSocketMode()
+	slack.CreatePackageClient(secrets, members, botChannel)
+	go slack.EventProcessor()
+	go slack.RunSocketMode()
 
 	scheduleTracker := scheduling.CreateScheduleTracker()
 	go scheduleTracker.Reciever()
