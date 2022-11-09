@@ -111,19 +111,20 @@ func (sc *slackClient) CommandStreamer(command string, outputType string, channe
 	scanner := bufio.NewScanner(stdpipe)
 	go func() {
 		for scanner.Scan() {
-			ts, err := PostMessage(channelID, scanner.Text())
-			if err != nil {
-				go func() {
+			outputLine := scanner.Text()
+			go func() {
+				ts, err := PostMessage(channelID, outputLine)
+				if err != nil {
 					time.Sleep(time.Duration(timeout) * time.Second)
 					sc.DeleteMessage(channelID, ts)
-				}()
-			} else {
-				sc.logger.WithFields(log.Fields{
-					"err":     err,
-					"command": command,
-				}).Error("Cannot scan output")
-				break
-			}
+				} else {
+					sc.logger.WithFields(log.Fields{
+						"err":     err,
+						"command": command,
+						"line":    outputLine,
+					}).Error("Cannot post command output")
+				}
+			}()
 		}
 	}()
 
