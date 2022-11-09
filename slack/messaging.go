@@ -1,7 +1,11 @@
 package slack
 
 import (
+	"bufio"
 	"errors"
+	"io"
+	"os/exec"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	goslack "github.com/slack-go/slack"
@@ -28,8 +32,8 @@ func (sc *slackClient) React(timestamp string, channelID string, text string) (e
 			sc.logger.WithField("err", err).Error("Couldn't react to message on Slack.")
 		} else {
 			sc.logger.WithFields(log.Fields{
-				"text":    text,
-				"channel": sc.getChannelName(channelID),
+				"text":      text,
+				"channelID": channelID,
 			}).Info("Sent reaction to Slack.")
 		}
 		return nil
@@ -63,9 +67,85 @@ func (sc *slackClient) PostMessage(channelID string, text string) (timestamp str
 		sc.logger.WithField("err", err).Error("Couldn't send message on Slack.")
 	} else {
 		sc.logger.WithFields(log.Fields{
-			"text":    text,
-			"channel": sc.getChannelName(channelID),
+			"text":      text,
+			"channelID": channelID,
 		}).Info("Sent message to Slack.")
 	}
 	return timestamp, err
+}
+
+func (sc *slackClient) DeleteMessage(channelID string, timestamp string) (err error) {
+	_, _, err = sc.api.DeleteMessage(channelID, timestamp)
+	if err != nil {
+		sc.logger.WithField("err", err).Error("Couldn't delete message on Slack.")
+	} else {
+		sc.logger.WithFields(log.Fields{
+			"timestamp": timestamp,
+			"channelID": channelID,
+		}).Info("Deleted message on Slack.")
+	}
+	return err
+}
+
+func (sc *slackClient) CommandStreamer(command string, outputType string, channelID string, timeout int) (err error) {
+	// timeout in seconds
+	cmd := exec.Command("bash", "-c", command)
+
+	var stdpipe io.ReadCloser
+	if outputType == "out" {
+		stdpipe, err = cmd.StdoutPipe()
+	} else if outputType == "err" {
+		stdpipe, err = cmd.StderrPipe()
+	} else {
+		errMsg := "Command streamer needs a correct output type"
+		sc.logger.WithField("err", err).Error(errMsg)
+		return errors.New(errMsg)
+	}
+
+	if err != nil {
+		errMsg := "Cannot create standard pipe"
+		sc.logger.WithField("err", err).Error(errMsg)
+		return errors.New(errMsg)
+	}
+
+	scanner := bufio.NewScanner(stdpipe)
+	go func() {
+		for scanner.Scan() {
+			ts, err := PostMessage(channelID, scanner.Text())
+			if err != nil {
+				go func() {
+					time.Sleep(time.Duration(timeout) * time.Second)
+					sc.DeleteMessage(channelID, ts)
+				}()
+			} else {
+				sc.logger.WithFields(log.Fields{
+					"err":     err,
+					"command": command,
+				}).Error("Cannot scan output")
+				break
+			}
+		}
+	}()
+
+	err = cmd.Start()
+	if err != nil {
+		errMsg := "Error starting Cmd"
+		sc.logger.WithFields(log.Fields{
+			"err":     err,
+			"command": command,
+		}).Error(errMsg)
+		return errors.New(errMsg)
+	}
+
+	err = cmd.Wait()
+	if err != nil {
+		errMsg := "Error waiting for Cmd"
+		sc.logger.WithFields(log.Fields{
+			"err":     err,
+			"command": command,
+		}).Error(errMsg)
+		return errors.New(errMsg)
+	}
+
+	return err
 }
