@@ -9,6 +9,16 @@ import (
 	"github.com/vishhvaan/lab-bot/functions"
 )
 
+type cb func(sc *slackClient, ev *slackevents.AppMentionEvent, fields []string)
+
+var basicResponses = map[string]cb{
+	"hello": hello, "hai": hello, "hey": hello,
+	"sup": hello, "hi": hello,
+	"bye": bye, "goodbye": bye, "tata": bye,
+	"sysinfo": sysinfo,
+	"thanks":  thanks, "thank": thanks,
+}
+
 func (sc *slackClient) commandInterpreter(ev *slackevents.AppMentionEvent) {
 	noUID := strings.ReplaceAll(ev.Text, "<@"+sc.bot.UserID+">", "")
 	fields := strings.Fields(noUID)
@@ -28,16 +38,6 @@ func (sc *slackClient) commandInterpreter(ev *slackevents.AppMentionEvent) {
 			}
 		}
 	}
-}
-
-type cb func(sc *slackClient, ev *slackevents.AppMentionEvent, fields []string)
-
-var basicResponses = map[string]cb{
-	"hello": hello, "hai": hello, "hey": hello,
-	"sup": hello, "hi": hello,
-	"bye": bye, "goodbye": bye, "tata": bye,
-	"sysinfo": sysinfo,
-	"thanks":  thanks, "thank": thanks,
 }
 
 func hello(sc *slackClient, ev *slackevents.AppMentionEvent, fields []string) {

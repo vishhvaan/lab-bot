@@ -11,12 +11,11 @@ import (
 )
 
 type labJob struct {
-	name      string
-	keyword   string
-	active    bool
-	desc      string
-	logger    *log.Entry
-	responses map[string]action
+	name    string
+	keyword string
+	active  bool
+	desc    string
+	logger  *log.Entry
 	job
 }
 
