@@ -38,6 +38,19 @@ func CreateHandler() (jh *JobHandler) {
 
 	jobLogger := logging.CreateNewLogger("jobhandler", "jobhandler")
 
+	jobs["paper"] = &paperUploaderJob{
+		labJob: labJob{
+			name:    "Paper Uploader",
+			keyword: "paper",
+			active:  true,
+			desc:    "Uploads papers downloaded from the scidownl utility",
+			logger: jobLogger.WithFields(log.Fields{
+				"jobtype": "uploader",
+				"job":     "paperUploader",
+			}),
+		},
+	}
+
 	return &JobHandler{
 		jobs:   jobs,
 		logger: jobLogger,

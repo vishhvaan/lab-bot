@@ -64,7 +64,31 @@ func (cj *controllerJob) init() {
 	} else {
 		cj.updatePowerStateInDB()
 	}
+}
 
+func (cj *controllerJob) commandProcessor(c slack.CommandInfo) {
+	if cj.active {
+		controllerActions := map[string]action{
+			"on":       cj.TurnOn,
+			"off":      cj.TurnOff,
+			"status":   cj.getPowerStatus,
+			"schedule": cj.scheduleHandler,
+		}
+		if len(c.Fields) == 1 {
+			cj.getPowerStatus(c)
+		} else {
+			k := functions.GetKeys(controllerActions)
+			subcommand := strings.ToLower(c.Fields[1])
+			if functions.Contains(k, subcommand) {
+				f := controllerActions[subcommand]
+				f(c)
+			} else {
+				cj.errorMsg(c.Fields, c.Channel, "I'm not sure what you sayin")
+			}
+		}
+	} else {
+		slack.PostMessage(c.Channel, "The "+cj.name+" is disabled")
+	}
 }
 
 func (cj *controllerJob) checkCreateBucket() (exists bool) {
@@ -228,31 +252,6 @@ func (cj *controllerJob) errorMsg(fields []string, channel string, message strin
 func (cj *controllerJob) sendMsg(channel string, message string) {
 	go cj.logger.Info(message)
 	slack.PostMessage(channel, message)
-}
-
-func (cj *controllerJob) commandProcessor(c slack.CommandInfo) {
-	if cj.active {
-		controllerActions := map[string]action{
-			"on":       cj.TurnOn,
-			"off":      cj.TurnOff,
-			"status":   cj.getPowerStatus,
-			"schedule": cj.scheduleHandler,
-		}
-		if len(c.Fields) == 1 {
-			cj.getPowerStatus(c)
-		} else {
-			k := functions.GetKeys(controllerActions)
-			subcommand := strings.ToLower(c.Fields[1])
-			if functions.Contains(k, subcommand) {
-				f := controllerActions[subcommand]
-				f(c)
-			} else {
-				cj.errorMsg(c.Fields, c.Channel, "I'm not sure what you sayin")
-			}
-		}
-	} else {
-		slack.PostMessage(c.Channel, "The "+cj.name+" is disabled")
-	}
 }
 
 func (cj *controllerJob) scheduleHandler(c slack.CommandInfo) {
