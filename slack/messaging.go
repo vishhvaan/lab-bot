@@ -87,8 +87,9 @@ func (sc *slackClient) DeleteMessage(channelID string, timestamp string) (err er
 	return err
 }
 
-func (sc *slackClient) CommandStreamer(command string, outputType string, channelID string, timeout int) (err error) {
+func (sc *slackClient) CommandStreamer(command string, outputType string, channelID string, timeout int) (output []string, err error) {
 	// timeout in seconds
+	// outputType is either "out" or "err"
 	cmd := exec.Command("bash", "-c", command)
 
 	var stdpipe io.ReadCloser
@@ -99,13 +100,13 @@ func (sc *slackClient) CommandStreamer(command string, outputType string, channe
 	} else {
 		errMsg := "Command streamer needs a correct output type"
 		sc.logger.WithField("err", err).Error(errMsg)
-		return errors.New(errMsg)
+		return output, errors.New(errMsg)
 	}
 
 	if err != nil {
 		errMsg := "Cannot create standard pipe"
 		sc.logger.WithField("err", err).Error(errMsg)
-		return errors.New(errMsg)
+		return output, errors.New(errMsg)
 	}
 
 	scanner := bufio.NewScanner(stdpipe)
@@ -125,6 +126,7 @@ func (sc *slackClient) CommandStreamer(command string, outputType string, channe
 					}).Error("Cannot post command output")
 				}
 			}()
+			output = append(output, outputLine)
 		}
 	}()
 
@@ -135,7 +137,7 @@ func (sc *slackClient) CommandStreamer(command string, outputType string, channe
 			"err":     err,
 			"command": command,
 		}).Error(errMsg)
-		return errors.New(errMsg)
+		return output, errors.New(errMsg)
 	}
 
 	err = cmd.Wait()
@@ -145,8 +147,8 @@ func (sc *slackClient) CommandStreamer(command string, outputType string, channe
 			"err":     err,
 			"command": command,
 		}).Error(errMsg)
-		return errors.New(errMsg)
+		return output, errors.New(errMsg)
 	}
 
-	return err
+	return output, err
 }

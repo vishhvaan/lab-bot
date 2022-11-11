@@ -3,7 +3,6 @@ package logging
 import (
 	"io"
 	"os"
-	"path"
 
 	log "github.com/sirupsen/logrus"
 
@@ -48,7 +47,7 @@ func CreateNewLogger(prefix string, filename string) *log.Entry {
 }
 
 func CreateLogFolder() (fullPath string) {
-	fullPath, err := files.CreateFolder(FindExeDir(), logFolder)
+	fullPath, err := files.CreateFolder(files.FindExeDir(), logFolder)
 	if err != nil {
 		log.Fatal("Cannot open log folder.")
 	}
@@ -61,12 +60,4 @@ func CreateLogFile(folder string, filename string) (file *os.File) {
 		log.Fatal("Cannot open log file.")
 	}
 	return file
-}
-
-func FindExeDir() (exePath string) {
-	ex, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-	return path.Dir(ex)
 }

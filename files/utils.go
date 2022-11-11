@@ -24,3 +24,11 @@ func OpenFile(base string, filename string) (file *os.File, err error) {
 		return file, err
 	}
 }
+
+func FindExeDir() (exePath string) {
+	ex, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	return path.Dir(ex)
+}

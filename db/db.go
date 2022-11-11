@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	bolt "go.etcd.io/bbolt"
 
+	"github.com/vishhvaan/lab-bot/files"
 	"github.com/vishhvaan/lab-bot/logging"
 )
 
@@ -20,7 +21,7 @@ var botDB database
 
 func Open() {
 	botDB.logger = logging.CreateNewLogger("database", "database")
-	exePath := logging.FindExeDir()
+	exePath := files.FindExeDir()
 	dbPath := path.Join(exePath, dbFile)
 
 	var err error

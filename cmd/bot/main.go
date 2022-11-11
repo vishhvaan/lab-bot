@@ -28,7 +28,7 @@ var (
 func init() {
 	rand.Seed(time.Now().UnixNano())
 	logging.Setup()
-	exePath := logging.FindExeDir()
+	exePath := files.FindExeDir()
 	flag.StringVar(&membersFile, "members", path.Join(exePath, "members.yml"), "Location of the members file")
 	flag.StringVar(&secretsFile, "secrets", path.Join(exePath, "secrets.yml"), "Location of the secrets file")
 	flag.StringVar(&botChannel, "channel", "lab-bot-channel", "Name of the bot channel")
