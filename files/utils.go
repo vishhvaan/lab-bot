@@ -1,6 +1,7 @@
 package files
 
 import (
+	"errors"
 	"os"
 	"path"
 )
@@ -22,6 +23,15 @@ func OpenFile(base string, filename string) (file *os.File, err error) {
 	} else {
 		file, err = os.OpenFile(fullFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0700)
 		return file, err
+	}
+}
+
+func DeleteFile(filepath string) (err error) {
+	if _, err := os.Stat(filepath); os.IsNotExist(err) {
+		return errors.New("File doesn't exist")
+	} else {
+		err = os.Remove(filepath)
+		return err
 	}
 }
 

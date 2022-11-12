@@ -3,6 +3,7 @@ package jobs
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/vishhvaan/lab-bot/files"
@@ -28,7 +29,7 @@ func (pu *paperUploaderJob) init() {
 		pu.logger.Error(message)
 		pu.active = false
 	} else {
-		pu.downloadFolder = filepath
+		pu.downloadFolder = filepath + string(os.PathSeparator)
 	}
 }
 
@@ -61,6 +62,7 @@ func (pu *paperUploaderJob) errorMsg(fields []string, channel string, message st
 
 func (pu *paperUploaderJob) paperDOIUploader(c slack.CommandInfo) {
 	paperURL := c.Fields[1]
+	paperURL = paperURL[1 : len(paperURL)-1]
 	url, err := url.ParseRequestURI(paperURL)
 
 	if err != nil {
@@ -69,7 +71,21 @@ func (pu *paperUploaderJob) paperDOIUploader(c slack.CommandInfo) {
 		command := fmt.Sprintf("scidownl download --doi %s --out %s", url.String(), pu.downloadFolder)
 		output, err := slack.CommandStreamer(command, "err", c.Channel, outputTimeout)
 		if err == nil {
-
+			lastLine := output[len(output)]
+			if strings.Contains(lastLine, "Successful") {
+				i := strings.Index(lastLine, ": ")
+				pdfPath := lastLine[i+1:]
+				pu.logger.WithField("path", pdfPath).Info("Uploading File")
+				slack.UploadFile(c.Channel, pdfPath, "Paper")
+				pu.logger.WithField("path", pdfPath).Info("Deleting File")
+				files.DeleteFile(pdfPath)
+			} else {
+				pu.logger.Error("Download not successful from scidownl")
+				pu.errorMsg(c.Fields, c.Channel, "Could not upload paper")
+			}
+		} else {
+			pu.logger.Error("Could not stream command")
+			pu.errorMsg(c.Fields, c.Channel, "Could not upload paper")
 		}
 	}
 
