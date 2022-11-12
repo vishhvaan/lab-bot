@@ -22,6 +22,14 @@ func (pu *paperUploaderJob) init() {
 	pu.labJob.init()
 
 	filepath, err := files.CreateFolder(files.FindExeDir(), paperFolder)
+	if err != nil {
+		message := "Cannot create paper download folder"
+		slack.Message(message)
+		pu.logger.Error(message)
+		pu.active = false
+	} else {
+		pu.downloadFolder = filepath
+	}
 }
 
 func (pu *paperUploaderJob) commandProcessor(c slack.CommandInfo) {
@@ -53,12 +61,12 @@ func (pu *paperUploaderJob) errorMsg(fields []string, channel string, message st
 
 func (pu *paperUploaderJob) paperDOIUploader(c slack.CommandInfo) {
 	paperURL := c.Fields[1]
-	_, err := url.ParseRequestURI(paperURL)
+	url, err := url.ParseRequestURI(paperURL)
 
 	if err != nil {
 		pu.errorMsg(c.Fields, c.Channel, "Invalid URL")
 	} else {
-		command := fmt.Sprintf("scidownl download --doi %s", paperURL)
+		command := fmt.Sprintf("scidownl download --doi %s --out %s", url.String(), pu.downloadFolder)
 		output, err := slack.CommandStreamer(command, "err", c.Channel, outputTimeout)
 		if err == nil {
 
