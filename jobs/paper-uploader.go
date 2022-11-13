@@ -76,7 +76,7 @@ func (pu *paperUploaderJob) paperDOIUploader(c slack.CommandInfo) {
 				i := strings.Index(lastLine, ": ")
 				pdfPath := lastLine[i+2:]
 				pu.logger.WithField("path", pdfPath).Info("Uploading File")
-				slack.UploadFile(c.Channel, pdfPath, "Paper")
+				slack.UploadFile(c.Channel, pdfPath, "")
 				pu.logger.WithField("path", pdfPath).Info("Deleting File")
 				files.DeleteFile(pdfPath)
 			} else {
