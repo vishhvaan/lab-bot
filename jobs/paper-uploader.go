@@ -68,7 +68,7 @@ func (pu *paperUploaderJob) paperDOIUploader(c slack.CommandInfo) {
 	if err != nil {
 		pu.errorMsg(c.Fields, c.Channel, "Invalid URL")
 	} else {
-		command := fmt.Sprintf("scidownl download --doi %s --out %s", url.String(), pu.downloadFolder)
+		command := fmt.Sprintf("scidownl download --doi \"%s\" --out %s", url.String(), pu.downloadFolder)
 		output, err := slack.CommandStreamer(command, "err", c.Channel, outputTimeout)
 		if err == nil {
 			lastLine := output[len(output)-1]
