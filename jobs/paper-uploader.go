@@ -71,16 +71,16 @@ func (pu *paperUploaderJob) paperDOIUploader(c slack.CommandInfo) {
 		command := fmt.Sprintf("scidownl download --doi %s --out %s", url.String(), pu.downloadFolder)
 		output, err := slack.CommandStreamer(command, "err", c.Channel, outputTimeout)
 		if err == nil {
-			lastLine := output[len(output)]
+			lastLine := output[len(output)-1]
 			if strings.Contains(lastLine, "Successful") {
 				i := strings.Index(lastLine, ": ")
-				pdfPath := lastLine[i+1:]
+				pdfPath := lastLine[i+2:]
 				pu.logger.WithField("path", pdfPath).Info("Uploading File")
 				slack.UploadFile(c.Channel, pdfPath, "Paper")
 				pu.logger.WithField("path", pdfPath).Info("Deleting File")
 				files.DeleteFile(pdfPath)
 			} else {
-				pu.logger.Error("Download not successful from scidownl")
+				pu.logger.Warn("Download not successful from scidownl")
 				pu.errorMsg(c.Fields, c.Channel, "Could not upload paper")
 			}
 		} else {

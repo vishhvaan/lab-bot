@@ -89,8 +89,9 @@ func (sc *slackClient) DeleteMessage(channelID string, timestamp string) (err er
 
 func (sc *slackClient) UploadFile(channelID string, filePath string, title string) (err error) {
 	_, err = sc.api.UploadFile(goslack.FileUploadParameters{
-		File:  filePath,
-		Title: title,
+		File:     filePath,
+		Title:    title,
+		Channels: []string{channelID},
 	})
 	if err != nil {
 		sc.logger.WithField("err", err).Error("Couldn't uploaded file to Slack.")
@@ -130,7 +131,7 @@ func (sc *slackClient) CommandStreamer(command string, outputType string, channe
 			outputLine := scanner.Text()
 			go func() {
 				ts, err := PostMessage(channelID, outputLine)
-				if err != nil {
+				if err == nil {
 					time.Sleep(time.Duration(timeout) * time.Second)
 					sc.DeleteMessage(channelID, ts)
 				} else {
