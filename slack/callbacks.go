@@ -17,6 +17,7 @@ var basicResponses = map[string]cb{
 	"bye": bye, "goodbye": bye, "tata": bye,
 	"sysinfo": sysinfo,
 	"thanks":  thanks, "thank": thanks,
+	"welcome": thanks,
 }
 
 func (sc *slackClient) commandInterpreter(ev *slackevents.AppMentionEvent) {

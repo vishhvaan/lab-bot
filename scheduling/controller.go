@@ -34,11 +34,14 @@ func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack
 		s := gocron.NewScheduler(time.Now().Local().Location())
 
 		name := command.Fields[0] + " " + command.Fields[2]
-		s.Cron(cronSched).Tag(powerVal).Do(func(command slack.CommandInfo, id string, name string, channel string) {
+		s.Cron(cronSched).Tag(powerVal).Do(func(command slack.CommandInfo, id string, name string) {
 			t := "[" + id + "] Executing " + name
-			slack.PostMessage(channel, t)
-			slack.CommandChan <- command
-		}, command, id, name, command.Channel)
+			slack.PostMessage(command.Channel, t)
+			slack.CommandChan <- slack.CommandInfo{
+				Fields:  []string{command.Fields[0], command.Fields[2]},
+				Channel: command.Channel,
+			}
+		}, command, id, name)
 		s.StartAsync()
 
 		record := scheduleRecord{
