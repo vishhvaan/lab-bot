@@ -42,6 +42,10 @@ func ModifyMessage(channelID string, timestamp string, text string) (err error) 
 	return packageSlackClient.UploadFile(channelID, timestamp, text)
 }
 
+func PinMessage(channelID string, timestamp string) (err error) {
+	return packageSlackClient.PinMessage(channelID, timestamp)
+}
+
 func CommandStreamer(command string, outputType string, channelID string, timeout int) (output []string, err error) {
 	return packageSlackClient.CommandStreamer(command, outputType, channelID, timeout)
 }
