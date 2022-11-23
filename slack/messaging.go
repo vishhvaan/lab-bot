@@ -103,6 +103,20 @@ func (sc *slackClient) UploadFile(channelID string, filePath string, title strin
 	return err
 }
 
+func (sc *slackClient) ModifyMessage(channelID string, timestamp string, text string) (err error) {
+	_, _, _, err = sc.api.UpdateMessage(channelID, timestamp, goslack.MsgOptionCompose(goslack.MsgOptionText(text, false)))
+	if err != nil {
+		sc.logger.WithField("err", err).Error("Couldn't update the message Slack.")
+	} else {
+		sc.logger.WithFields(log.Fields{
+			"channelID": channelID,
+			"timestamp": timestamp,
+			"text":      text,
+		}).Info("Updated message on Slack.")
+	}
+	return err
+}
+
 func (sc *slackClient) CommandStreamer(command string, outputType string, channelID string, timeout int) (output []string, err error) {
 	// timeout in seconds
 	// outputType is either "out" or "err"
