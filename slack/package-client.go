@@ -18,7 +18,7 @@ func RunSocketMode() {
 	packageSlackClient.client.Run()
 }
 
-func React(timestamp string, channelID string, text string) (err error) {
+func React(timestamp string, channelID string, text string) error {
 	return packageSlackClient.React(timestamp, channelID, text)
 }
 
@@ -34,15 +34,19 @@ func PostMessage(channelID string, text string) (timestamp string, err error) {
 	return packageSlackClient.PostMessage(channelID, text)
 }
 
-func UploadFile(channelID string, filePath string, title string) (err error) {
+func DeleteMessage(channelID string, timestamp string) error {
+	return packageSlackClient.DeleteMessage(channelID, timestamp)
+}
+
+func UploadFile(channelID string, filePath string, title string) error {
 	return packageSlackClient.UploadFile(channelID, filePath, title)
 }
 
-func ModifyMessage(channelID string, timestamp string, text string) (err error) {
+func ModifyMessage(channelID string, timestamp string, text string) error {
 	return packageSlackClient.UploadFile(channelID, timestamp, text)
 }
 
-func PinMessage(channelID string, timestamp string) (err error) {
+func PinMessage(channelID string, timestamp string) error {
 	return packageSlackClient.PinMessage(channelID, timestamp)
 }
 

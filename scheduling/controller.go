@@ -16,9 +16,11 @@ import (
 )
 
 type ControllerSchedule struct {
-	Logger *log.Entry
-	Sched  map[string]*Schedule
-	DbPath []string
+	powerMessageChannel   string
+	powerMessageTimestamp string
+	Logger                *log.Entry
+	Sched                 map[string]*Schedule
+	DbPath                []string
 }
 
 func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack.CommandInfo, newSched bool) (err error) {
@@ -168,4 +170,17 @@ func (cs *ControllerSchedule) writeSchedtoDB(record scheduleRecord) (err error) 
 func (cs *ControllerSchedule) deleteSchedfromDB(record scheduleRecord) (err error) {
 	err = db.DeleteValue(cs.DbPath, record.ID)
 	return err
+}
+
+func (cs *ControllerSchedule) PostPowerMessage(name string, status string) (err error) {
+	cs.powerMessageTimestamp, err = slack.PostMessage(cs.powerMessageChannel, name+": "+status)
+	return err
+}
+
+func (cs *ControllerSchedule) DeletePowerMessage() error {
+	return slack.DeleteMessage(cs.powerMessageChannel, cs.powerMessageTimestamp)
+}
+
+func (cs *ControllerSchedule) ModifyPowerMessage(name string, status string) error {
+	return slack.ModifyMessage(cs.powerMessageChannel, cs.powerMessageTimestamp, name+": "+status)
 }

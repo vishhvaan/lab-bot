@@ -61,8 +61,10 @@ func (cj *controllerJob) init() {
 	if cj.checkCreateBucket() {
 		cj.loadSchedsFromDB()
 		cj.loadPowerStateFromDB()
+
 	} else {
 		cj.updatePowerStateInDB()
+		cj.PostPowerMessage()
 	}
 }
 
@@ -126,6 +128,11 @@ func (cj *controllerJob) loadSchedsFromDB() (err error) {
 			}).Info("Loaded scheduled task from the database")
 		}
 	}
+
+	if len(records) != 0 {
+		cj.loadPowerMessageFromDB()
+	}
+
 	return err
 }
 
