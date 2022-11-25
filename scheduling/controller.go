@@ -16,6 +16,7 @@ import (
 )
 
 type ControllerSchedule struct {
+	Set                   bool
 	powerMessageChannel   string
 	powerMessageTimestamp string
 	Logger                *log.Entry
@@ -74,6 +75,7 @@ func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack
 
 		if err == nil {
 			cs.Sched[powerVal] = sch
+			cs.Set = true
 		}
 		return err
 	}
@@ -92,6 +94,10 @@ func (cs *ControllerSchedule) ContRemove(command slack.CommandInfo) (err error) 
 			cs.Logger.WithField("id", cs.Sched[powerVal].scheduleRecord.ID).Info("Deleted schedule from database")
 		}
 		delete(cs.Sched, powerVal)
+		if len(cs.Sched) == 0 {
+			cs.Set = false
+			cs.DeletePowerMessage()
+		}
 		return nil
 	} else {
 		return errors.New("there is no scheduled " + powerVal + " task")
@@ -169,6 +175,34 @@ func (cs *ControllerSchedule) writeSchedtoDB(record scheduleRecord) (err error) 
 
 func (cs *ControllerSchedule) deleteSchedfromDB(record scheduleRecord) (err error) {
 	err = db.DeleteValue(cs.DbPath, record.ID)
+	return err
+}
+
+func (cs *ControllerSchedule) LoadPowerMessagefromDB() error {
+	value, err := db.ReadValue(cs.DbPath, "PowerMessageTimestamp")
+	if err == nil {
+		if value != nil {
+			cs.powerMessageTimestamp = string(value[:])
+			value, err = db.ReadValue(cs.DbPath, "PowerMessageChannel")
+			if err == nil {
+				if value != nil {
+					cs.powerMessageChannel = string(value[:])
+				} else {
+					cs.Logger.WithFields(log.Fields{
+						"err": err,
+					}).Warn("Cannot load power message channel")
+					return errors.New("channel doesn't exist")
+				}
+			} else {
+				return err
+			}
+		} else {
+			cs.Logger.WithFields(log.Fields{
+				"err": err,
+			}).Warn("Cannot load power message timestamp")
+			return errors.New("timestamp doesn't exist")
+		}
+	}
 	return err
 }
 

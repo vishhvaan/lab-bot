@@ -130,7 +130,10 @@ func (cj *controllerJob) loadSchedsFromDB() (err error) {
 	}
 
 	if len(records) != 0 {
-		cj.loadPowerMessageFromDB()
+		err = cj.scheduling.LoadPowerMessagefromDB()
+		if err != nil {
+
+		}
 	}
 
 	return err
@@ -196,7 +199,8 @@ func (cj *controllerJob) TurnOn(c slack.CommandInfo) {
 		} else {
 			err := cj.customOn()
 			cj.lastPowerOn = time.Now()
-			cj.slackPowerResponse(true, err, c)
+			cj.powerState = true
+			cj.slackPowerResponse(cj.powerState, err, c)
 			cj.updatePowerStateInDB()
 		}
 	}
@@ -210,7 +214,8 @@ func (cj *controllerJob) TurnOff(c slack.CommandInfo) {
 			slack.PostMessage(c.Channel, message)
 		} else {
 			err := cj.customOff()
-			cj.slackPowerResponse(false, err, c)
+			cj.powerState = false
+			cj.slackPowerResponse(cj.powerState, err, c)
 			cj.updatePowerStateInDB()
 		}
 	}
@@ -226,7 +231,6 @@ func (cj *controllerJob) slackPowerResponse(status bool, err error, c slack.Comm
 		go cj.logger.WithField("err", err).Error(message)
 		slack.Message(message)
 	} else {
-		cj.powerState = status
 		message := "Turned " + statusString + " the " + cj.machineName
 		go cj.logger.Info(message)
 		if c.TimeStamp != "" {
