@@ -38,8 +38,6 @@ func (cs *ControllerSchedule) ContSet(id string, cronSched string, command slack
 
 		name := command.Fields[0] + " " + command.Fields[2]
 		s.Cron(cronSched).Tag(powerVal).Do(func(command slack.CommandInfo, id string, name string) {
-			t := "[" + id + "] Executing " + name
-			slack.PostMessage(command.Channel, t)
 			slack.CommandChan <- slack.CommandInfo{
 				Fields:  []string{command.Fields[0], command.Fields[2]},
 				Channel: command.Channel,
@@ -179,15 +177,13 @@ func (cs *ControllerSchedule) deleteSchedfromDB(record scheduleRecord) (err erro
 }
 
 func (cs *ControllerSchedule) LoadPowerMessagefromDB() error {
-	value, err := db.ReadValue(cs.DbPath, "PowerMessageTimestamp")
+	var readMessageChannel []byte
+	readTimestamp, err := db.ReadValue(cs.DbPath, "PowerMessageTimestamp")
 	if err == nil {
-		if value != nil {
-			cs.powerMessageTimestamp = string(value[:])
-			value, err = db.ReadValue(cs.DbPath, "PowerMessageChannel")
+		if readTimestamp != nil {
+			readMessageChannel, err = db.ReadValue(cs.DbPath, "PowerMessageChannel")
 			if err == nil {
-				if value != nil {
-					cs.powerMessageChannel = string(value[:])
-				} else {
+				if readMessageChannel == nil {
 					cs.Logger.WithFields(log.Fields{
 						"err": err,
 					}).Warn("Cannot load power message channel")
@@ -203,16 +199,35 @@ func (cs *ControllerSchedule) LoadPowerMessagefromDB() error {
 			return errors.New("timestamp doesn't exist")
 		}
 	}
+
+	cs.powerMessageTimestamp = string(readTimestamp[:])
+	cs.powerMessageChannel = string(readMessageChannel[:])
+
 	return err
 }
 
-func (cs *ControllerSchedule) PostPowerMessage(name string, status string) (err error) {
-	cs.powerMessageTimestamp, err = slack.PostMessage(cs.powerMessageChannel, name+": "+status)
+func (cs *ControllerSchedule) PostPowerMessage(channel string, name string, status string) (err error) {
+	cs.powerMessageChannel = channel
+	cs.powerMessageTimestamp, err = slack.PostMessage(channel, name+": "+status)
+	if err == nil {
+		slack.PinMessage(cs.powerMessageChannel, cs.powerMessageTimestamp)
+		db.AddValue(cs.DbPath, "PowerMessageTimestamp", []byte(cs.powerMessageTimestamp))
+		db.AddValue(cs.DbPath, "PowerMessageChannel", []byte(cs.powerMessageChannel))
+		cs.Logger.WithFields(log.Fields{
+			"channel":   cs.powerMessageChannel,
+			"timestamp": cs.powerMessageTimestamp,
+		}).Warn("Posted new power message")
+	}
 	return err
 }
 
 func (cs *ControllerSchedule) DeletePowerMessage() error {
-	return slack.DeleteMessage(cs.powerMessageChannel, cs.powerMessageTimestamp)
+	err := slack.DeleteMessage(cs.powerMessageChannel, cs.powerMessageTimestamp)
+	if err == nil {
+		db.DeleteValue(cs.DbPath, "PowerMessageTimestamp")
+		db.DeleteValue(cs.DbPath, "PowerMessageChannel")
+	}
+	return err
 }
 
 func (cs *ControllerSchedule) ModifyPowerMessage(name string, status string) error {

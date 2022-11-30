@@ -61,10 +61,8 @@ func (cj *controllerJob) init() {
 	if cj.checkCreateBucket() {
 		cj.loadSchedsFromDB()
 		cj.loadPowerStateFromDB()
-
 	} else {
 		cj.updatePowerStateInDB()
-		cj.PostPowerMessage()
 	}
 }
 
@@ -132,7 +130,19 @@ func (cj *controllerJob) loadSchedsFromDB() (err error) {
 	if len(records) != 0 {
 		err = cj.scheduling.LoadPowerMessagefromDB()
 		if err != nil {
-
+			cj.logger.Warn("Couldn't load power message from db, posting new one")
+			cj.scheduling.PostPowerMessage(records[0].Command.Channel, cj.name, cj.powerState)
+		} else {
+			cj.logger.Info("Found power message in db, testing")
+			err := cj.scheduling.ModifyPowerMessage(cj.name, "testing")
+			if err != nil {
+				cj.logger.Warn("Power message testing failed, deleting and posting new one")
+				cj.scheduling.DeletePowerMessage()
+				cj.scheduling.PostPowerMessage(records[0].Command.Channel, cj.name, cj.powerState)
+			} else {
+				cj.logger.Info("Power message testing succeeded")
+				cj.scheduling.ModifyPowerMessage(cj.name, cj.powerState)
+			}
 		}
 	}
 
@@ -189,6 +199,9 @@ func (cj *controllerJob) TurnOn(c slack.CommandInfo) {
 			err := cj.customOn()
 			cj.lastPowerOn = time.Now()
 			cj.powerState = "on"
+			if cj.scheduling.Set {
+				cj.scheduling.ModifyPowerMessage(cj.name, cj.powerState)
+			}
 			cj.slackPowerResponse(cj.powerState, err, c)
 			cj.updatePowerStateInDB()
 		}
@@ -204,6 +217,9 @@ func (cj *controllerJob) TurnOff(c slack.CommandInfo) {
 		} else {
 			err := cj.customOff()
 			cj.powerState = "off"
+			if cj.scheduling.Set {
+				cj.scheduling.ModifyPowerMessage(cj.name, cj.powerState)
+			}
 			cj.slackPowerResponse(cj.powerState, err, c)
 			cj.updatePowerStateInDB()
 		}
@@ -291,7 +307,7 @@ func (cj *controllerJob) sched(c slack.CommandInfo) {
 			} else {
 				cj.sendMsg(c.Channel, "_Successfully scheduled power "+powerVal+" task._\n"+cj.scheduling.ContGetSchedulingStatus())
 				if !newSched {
-					cj.scheduling.PostPowerMessage(cj.name, cj.powerState)
+					cj.scheduling.PostPowerMessage(c.Channel, cj.name, cj.powerState)
 				}
 			}
 			return
