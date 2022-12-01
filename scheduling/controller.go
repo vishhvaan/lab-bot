@@ -134,7 +134,7 @@ func (cs *ControllerSchedule) ContGetSchedulingStatus() string {
 }
 
 func (cs *ControllerSchedule) LoadSchedsfromDB() (records []scheduleRecord, err error) {
-	_, values, err := db.GetAllKeysValues(cs.DbPath)
+	_, values, err := db.GetAllKeysValues(append(cs.DbPath, "records"))
 	if err != nil {
 		return records, err
 	}
@@ -149,7 +149,8 @@ func (cs *ControllerSchedule) LoadSchedsfromDB() (records []scheduleRecord, err 
 }
 
 func (cs *ControllerSchedule) writeSchedtoDB(record scheduleRecord) (err error) {
-	value, err := db.ReadValue(cs.DbPath, record.ID)
+	recordsPath := append(cs.DbPath, "records")
+	value, err := db.ReadValue(recordsPath, record.ID)
 	if value != nil {
 		cs.Logger.WithFields(log.Fields{
 			"path": cs.DbPath,
@@ -167,12 +168,12 @@ func (cs *ControllerSchedule) writeSchedtoDB(record scheduleRecord) (err error) 
 		return err
 	}
 
-	err = db.AddValue(cs.DbPath, record.ID, buf)
+	err = db.AddValue(recordsPath, record.ID, buf)
 	return err
 }
 
 func (cs *ControllerSchedule) deleteSchedfromDB(record scheduleRecord) (err error) {
-	err = db.DeleteValue(cs.DbPath, record.ID)
+	err = db.DeleteValue(append(cs.DbPath, "records"), record.ID)
 	return err
 }
 
