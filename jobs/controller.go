@@ -95,6 +95,7 @@ func (cj *controllerJob) checkCreateBucket() (exists bool) {
 	exists = db.CheckBucketExists(cj.scheduling.DbPath)
 	if !exists {
 		db.CreateBucket(cj.scheduling.DbPath)
+		db.CreateBucket(append(cj.scheduling.DbPath, "records"))
 	}
 	return exists
 }
@@ -141,7 +142,6 @@ func (cj *controllerJob) loadSchedsFromDB() (err error) {
 				cj.scheduling.PostPowerMessage(records[0].Command.Channel, cj.name, cj.powerState)
 			} else {
 				cj.logger.Info("Power message testing succeeded")
-				cj.scheduling.ModifyPowerMessage(cj.name, cj.powerState)
 			}
 		}
 	}
@@ -181,6 +181,10 @@ func (cj *controllerJob) loadPowerStateFromDB() (err error) {
 				cj.logger.WithField("machine", cj.machineName).Error("Cannot unmarshal lastPowerOn from db")
 			} else {
 				cj.lastPowerOn = lastPowerOn
+			}
+
+			if cj.scheduling.Set {
+				cj.scheduling.ModifyPowerMessage(cj.name, cj.powerState)
 			}
 		}
 
