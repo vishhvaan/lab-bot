@@ -43,7 +43,7 @@ func UploadFile(channelID string, filePath string, title string) error {
 }
 
 func ModifyMessage(channelID string, timestamp string, text string) error {
-	return packageSlackClient.UploadFile(channelID, timestamp, text)
+	return packageSlackClient.ModifyMessage(channelID, timestamp, text)
 }
 
 func PinMessage(channelID string, timestamp string) error {

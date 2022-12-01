@@ -216,7 +216,7 @@ func (cs *ControllerSchedule) PostPowerMessage(channel string, name string, stat
 		cs.Logger.WithFields(log.Fields{
 			"channel":   cs.powerMessageChannel,
 			"timestamp": cs.powerMessageTimestamp,
-		}).Warn("Posted new power message")
+		}).Info("Posted new power message")
 	}
 	return err
 }
@@ -231,5 +231,17 @@ func (cs *ControllerSchedule) DeletePowerMessage() error {
 }
 
 func (cs *ControllerSchedule) ModifyPowerMessage(name string, status string) error {
-	return slack.ModifyMessage(cs.powerMessageChannel, cs.powerMessageTimestamp, name+": "+status)
+	err := slack.ModifyMessage(cs.powerMessageChannel, cs.powerMessageTimestamp, name+": "+status)
+	if err != nil {
+		cs.Logger.WithFields(log.Fields{
+			"channel":   cs.powerMessageChannel,
+			"timestamp": cs.powerMessageTimestamp,
+		}).Warn("Couldn't modify power message")
+	} else {
+		cs.Logger.WithFields(log.Fields{
+			"channel":   cs.powerMessageChannel,
+			"timestamp": cs.powerMessageTimestamp,
+		}).Info("Modified power message")
+	}
+	return err
 }
