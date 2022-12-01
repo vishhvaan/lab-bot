@@ -46,6 +46,10 @@ func ModifyMessage(channelID string, timestamp string, text string) error {
 	return packageSlackClient.ModifyMessage(channelID, timestamp, text)
 }
 
+func ListPins(channelID string) (pinnedMessages map[string]string, err error) {
+	return packageSlackClient.ListPins(channelID)
+}
+
 func PinMessage(channelID string, timestamp string) error {
 	return packageSlackClient.PinMessage(channelID, timestamp)
 }

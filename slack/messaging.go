@@ -11,6 +11,10 @@ import (
 	goslack "github.com/slack-go/slack"
 )
 
+type SlackItem struct {
+	goslack.Item
+}
+
 type MessageInfo struct {
 	Type      string
 	Timestamp string
@@ -115,6 +119,23 @@ func (sc *slackClient) ModifyMessage(channelID string, timestamp string, text st
 		}).Info("Updated message on Slack.")
 	}
 	return err
+}
+
+func (sc *slackClient) ListPins(channelID string) (pinnedMessages map[string]string, err error) {
+	pinnedMessages = make(map[string]string)
+	items, _, err := sc.api.ListPins(channelID)
+	if err != nil {
+		sc.logger.WithFields(log.Fields{
+			"err":     err,
+			"channel": channelID,
+		}).Error("Couldn't find pinned messages on Slack.")
+	}
+
+	for _, item := range items {
+		pinnedMessages[item.Timestamp] = item.Message.Text
+	}
+
+	return pinnedMessages, err
 }
 
 func (sc *slackClient) PinMessage(channelID string, timestamp string) (err error) {
