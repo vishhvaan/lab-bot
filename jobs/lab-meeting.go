@@ -68,7 +68,16 @@ func (lm *LabMeetingJob) presentHandler(c slack.CommandInfo) {
 }
 
 func (lm *LabMeetingJob) parselabMeetingGroups(c slack.CommandInfo) {
-
+	if len(c.Fields) >= 3 {
+		groupsJSON := strings.Join(c.Fields[4:], " ")
+		err := json.Unmarshal([]byte(groupsJSON), &lm.labMeetingGroups)
+		if err != nil {
+			go lm.logger.WithField("command", groupsJSON).WithError(err).Warn("Cannot unmarshal json from message")
+			slack.PostMessage(c.Channel, "Cannot parse groups from the input JSON")
+			return
+		}
+	}
+	lm.errorMsg(c.Fields, c.Channel, "Malformed groups update command")
 }
 
 // func (lm *LabMeetingJob) loadlabMeetingGroupsFromDB() {
