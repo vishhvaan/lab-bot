@@ -15,11 +15,10 @@ import (
 )
 
 type slackClient struct {
-	name    string
-	api     *goslack.Client
-	client  *socketmode.Client
-	logger  *log.Entry
-	members map[string]config.Member
+	name   string
+	api    *goslack.Client
+	client *socketmode.Client
+	logger *log.Entry
 	slackBot
 }
 
@@ -28,19 +27,19 @@ type slackBot struct {
 	botChannelID string
 }
 
-func CreateClient(name string, secrets map[string]string, members map[string]config.Member, botChannel string) (sc *slackClient) {
+func CreateClient(name string, botChannel string) (sc *slackClient) {
 	logFolder := logging.CreateLogFolder()
 	logFileInternal := logging.CreateLogFile(logFolder, "slack_internal")
 	slackLogger := logging.CreateNewLogger("slack", "slack")
 
 	api := goslack.New(
-		secrets["slack-bot-token"],
+		config.Secrets["slack-bot-token"],
 		goslack.OptionDebug(true),
 		goslack.OptionLog(stdlog.New(logFileInternal,
 			"api: ",
 			stdlog.Lshortfile|stdlog.LstdFlags,
 		)),
-		goslack.OptionAppLevelToken(secrets["slack-app-token"]),
+		goslack.OptionAppLevelToken(config.Secrets["slack-app-token"]),
 	)
 
 	client := socketmode.New(
@@ -76,11 +75,10 @@ func CreateClient(name string, secrets map[string]string, members map[string]con
 	}
 
 	sc = &slackClient{
-		name:    name,
-		api:     api,
-		client:  client,
-		logger:  slackLogger,
-		members: members,
+		name:   name,
+		api:    api,
+		client: client,
+		logger: slackLogger,
 		slackBot: slackBot{
 			bot:          bot,
 			botChannelID: botChannelID,

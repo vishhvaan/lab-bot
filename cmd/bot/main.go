@@ -44,14 +44,14 @@ func main() {
 	files.CheckFile(secretsFile)
 
 	log.Info("Loading config files.")
-	members := config.ParseMembers(membersFile)
-	secrets := config.ParseSecrets(secretsFile)
-	slack.CheckSecrets(secrets)
+	config.ParseMembers(membersFile)
+	config.ParseSecrets(secretsFile)
+	slack.CheckSlackSecrets()
 
 	db.Open()
 	defer db.Close()
 
-	slack.CreatePackageClient(secrets, members, botChannel)
+	slack.CreatePackageClient(botChannel)
 	go slack.EventProcessor()
 	go slack.RunSocketMode()
 

@@ -1,13 +1,9 @@
 package slack
 
-import (
-	"github.com/vishhvaan/lab-bot/config"
-)
-
 var packageSlackClient *slackClient
 
-func CreatePackageClient(secrets map[string]string, members map[string]config.Member, botChannel string) {
-	packageSlackClient = CreateClient("global", secrets, members, botChannel)
+func CreatePackageClient(botChannel string) {
+	packageSlackClient = CreateClient("global", botChannel)
 }
 
 func EventProcessor() {

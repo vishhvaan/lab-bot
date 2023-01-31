@@ -7,6 +7,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+var Secrets map[string]string
+
+var Members map[string]Member
+
 type Member struct {
 	FirstName string   `yaml:"first_name"`
 	LastName  string   `yaml:"last_name"`
@@ -16,7 +20,7 @@ type Member struct {
 	Roles     []string `yaml:"roles"`
 }
 
-func ParseMembers(membersFile string) (members map[string]Member) {
+func ParseMembers(membersFile string) {
 	yamlMembers, err := ioutil.ReadFile(membersFile)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -24,16 +28,15 @@ func ParseMembers(membersFile string) (members map[string]Member) {
 		}).Fatal("Cannot read members file.")
 	}
 
-	err = yaml.Unmarshal(yamlMembers, &members)
+	err = yaml.Unmarshal(yamlMembers, &Members)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Fatal("Cannot parse members file.")
 	}
-	return members
 }
 
-func ParseSecrets(secretsFile string) (secrets map[string]string) {
+func ParseSecrets(secretsFile string) {
 	yamlSecrets, err := ioutil.ReadFile(secretsFile)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -41,11 +44,10 @@ func ParseSecrets(secretsFile string) (secrets map[string]string) {
 		}).Fatal("Cannot read secrets file.")
 	}
 
-	err = yaml.Unmarshal(yamlSecrets, &secrets)
+	err = yaml.Unmarshal(yamlSecrets, &Secrets)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Fatal("Cannot parse secrets file.")
 	}
-	return secrets
 }
