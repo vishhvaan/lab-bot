@@ -9,19 +9,19 @@ import (
 	"github.com/vishhvaan/lab-bot/slack"
 )
 
-type LabMeetingJob struct {
+type labMeetingJob struct {
 	labJob
 	labMeetingGroups map[string][]string
 }
 
-func (lm *LabMeetingJob) init() {
+func (lm *labMeetingJob) init() {
 	lm.labJob.init()
 
 	lm.labMeetingGroups = make(map[string][]string)
 	// lm.loadlabMeetingGroupsFromDB()
 }
 
-func (lm *LabMeetingJob) commandProcessor(c slack.CommandInfo) {
+func (lm *labMeetingJob) commandProcessor(c slack.CommandInfo) {
 	if lm.active {
 		controllerActions := map[string]action{
 			"groups":  lm.groupsHandler,
@@ -44,7 +44,7 @@ func (lm *LabMeetingJob) commandProcessor(c slack.CommandInfo) {
 	}
 }
 
-func (lm *LabMeetingJob) groupsHandler(c slack.CommandInfo) {
+func (lm *labMeetingJob) groupsHandler(c slack.CommandInfo) {
 	controllerActions := map[string]action{
 		"json":   lm.printlabMeetingGroupsJSON,
 		"update": lm.parselabMeetingGroups,
@@ -63,11 +63,11 @@ func (lm *LabMeetingJob) groupsHandler(c slack.CommandInfo) {
 	}
 }
 
-func (lm *LabMeetingJob) presentHandler(c slack.CommandInfo) {
+func (lm *labMeetingJob) presentHandler(c slack.CommandInfo) {
 
 }
 
-func (lm *LabMeetingJob) parselabMeetingGroups(c slack.CommandInfo) {
+func (lm *labMeetingJob) parselabMeetingGroups(c slack.CommandInfo) {
 	if len(c.Fields) >= 3 {
 		groupsJSON := strings.Join(c.Fields[4:], " ")
 		err := json.Unmarshal([]byte(groupsJSON), &lm.labMeetingGroups)
@@ -84,7 +84,7 @@ func (lm *LabMeetingJob) parselabMeetingGroups(c slack.CommandInfo) {
 
 // }
 
-func (lm *LabMeetingJob) printlabMeetingGroups(c slack.CommandInfo) {
+func (lm *labMeetingJob) printlabMeetingGroups(c slack.CommandInfo) {
 	if lm.labMeetingGroups != nil && len(lm.labMeetingGroups) == 0 {
 		lm.sendMsg(c.Channel, "Lab Meeting Groups: "+fmt.Sprint(lm.labMeetingGroups))
 	} else {
@@ -92,7 +92,7 @@ func (lm *LabMeetingJob) printlabMeetingGroups(c slack.CommandInfo) {
 	}
 }
 
-func (lm *LabMeetingJob) printlabMeetingGroupsJSON(c slack.CommandInfo) {
+func (lm *labMeetingJob) printlabMeetingGroupsJSON(c slack.CommandInfo) {
 	if lm.labMeetingGroups != nil && len(lm.labMeetingGroups) == 0 {
 		str, err := json.Marshal(lm.labMeetingGroups)
 		if err != nil {
@@ -105,12 +105,12 @@ func (lm *LabMeetingJob) printlabMeetingGroupsJSON(c slack.CommandInfo) {
 	}
 }
 
-func (lm *LabMeetingJob) sendMsg(channel string, message string) {
+func (lm *labMeetingJob) sendMsg(channel string, message string) {
 	go lm.logger.Info(message)
 	slack.PostMessage(channel, message)
 }
 
-func (lm *LabMeetingJob) errorMsg(fields []string, channel string, message string) {
+func (lm *labMeetingJob) errorMsg(fields []string, channel string, message string) {
 	go lm.logger.WithField("fields", fields).Warn(message)
 	slack.PostMessage(channel, message)
 }
