@@ -26,7 +26,6 @@ type controllerJob struct {
 	customInit  func() (err error)
 	customOn    func() (err error)
 	customOff   func() (err error)
-	logger      *log.Entry
 	scheduling  scheduling.ControllerSchedule
 	dbPath      []string
 	controller
