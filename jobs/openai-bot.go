@@ -7,30 +7,51 @@ import (
 
 	gogpt "github.com/sashabaranov/go-gpt3"
 
+	"github.com/vishhvaan/lab-bot/config"
+	"github.com/vishhvaan/lab-bot/functions"
 	"github.com/vishhvaan/lab-bot/slack"
 )
 
 type openAIBot struct {
 	labJob
-	gptClient      *gogpt.Client
-	gptContext     context.Context
-	model          string
-	defaultTimeout time.Duration
+	gptClient        *gogpt.Client
+	gptContext       context.Context
+	model            string
+	maxTokens        int
+	Temperature      float32
+	TopP             float32
+	FrequencyPenalty float32
+	PresencePenalty  float32
+	defaultTimeout   time.Duration
 }
 
 func (b *openAIBot) init() {
 	b.labJob.init()
 
-	b.gptClient = gogpt.NewClient("your token")
+	if !functions.Contains(functions.GetKeys(config.Secrets), "openai-api-key") {
+		b.logger.Error("OpenAI API Key not found in the secrets file (key is openai-api-key)")
+		go slack.Message("OpenAI API key not found. Disabling response bot.")
+		b.active = false
+		return
+	}
+
+	b.gptClient = gogpt.NewClient(config.Secrets["openai-api-key"])
 	b.gptContext = context.Background()
 	b.defaultTimeout = 10 * time.Second
+	b.model = "text-davinci-003"
+	b.maxTokens = 10
+	b.Temperature = 0.5
+	b.TopP = 0.3
+	b.FrequencyPenalty = 0.5
+	b.PresencePenalty = 0
+
 }
 
 func (b *openAIBot) sendCompletion(c slack.CommandInfo) {
 	prompt := strings.Join(c.Fields[2:], " ")
 	req := gogpt.CompletionRequest{
 		Model:     b.model,
-		MaxTokens: 5,
+		MaxTokens: b.maxTokens,
 		Prompt:    prompt,
 	}
 

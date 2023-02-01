@@ -6,15 +6,16 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/vishhvaan/lab-bot/config"
+	"github.com/vishhvaan/lab-bot/functions"
 )
 
 func CheckSlackSecrets() {
-	if config.Secrets["slack-app-token"] == "" {
-		log.Fatal("App token not found.")
+	if !functions.Contains(functions.GetKeys(config.Secrets), "slack-app-token") {
+		log.Fatal("App token not found. (key is slack-app-token)")
 	}
 
-	if config.Secrets["slack-bot-token"] == "" {
-		log.Fatal("Bot token not found.")
+	if !functions.Contains(functions.GetKeys(config.Secrets), "slack-bot-token") {
+		log.Fatal("App token not found. (key is slack-bot-token)")
 	}
 
 	if !strings.HasPrefix(config.Secrets["slack-app-token"], "xapp-") {
