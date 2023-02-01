@@ -40,12 +40,15 @@ func (b *openAIBot) init() {
 	b.defaultTimeout = 10 * time.Second
 
 	b.model = "text-davinci-003"
-	b.maxTokens = 10
+	b.maxTokens = 1000
 	b.Temperature = 0.5
 	b.TopP = 0.3
 	b.FrequencyPenalty = 0.5
 	b.PresencePenalty = 0
 
+	m := "The OpenAI chat bot has been loaded."
+	go slack.Message(m)
+	b.logger.Info(m)
 }
 
 func (b *openAIBot) commandProcessor(c slack.CommandInfo) {
@@ -90,8 +93,8 @@ func (b *openAIBot) sendCompletion(c slack.CommandInfo) {
 	}
 
 	m := resp.Choices[0].Text
-	go b.logger.WithField("prompt", prompt).Info(m)
-	slack.PostMessage(c.Channel, m)
+	go slack.PostMessage(c.Channel, m)
+	b.logger.WithField("prompt", prompt).Info(m)
 }
 
 func (b *openAIBot) modifyParameters(c slack.CommandInfo) {
