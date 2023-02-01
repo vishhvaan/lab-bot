@@ -51,7 +51,7 @@ func CreateHandler() (jh *JobHandler) {
 		},
 	}
 
-	jobs[">"] = &openAIBot{
+	jobs["&gt;"] = &openAIBot{
 		labJob: labJob{
 			name:    "OpenAI Bot",
 			keyword: ">",
