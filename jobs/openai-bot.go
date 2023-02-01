@@ -47,6 +47,28 @@ func (b *openAIBot) init() {
 
 }
 
+func (b *openAIBot) commandProcessor(c slack.CommandInfo) {
+	if b.active {
+		controllerActions := map[string]action{
+			"modify": b.modifyParameters,
+		}
+		if len(c.Fields) == 1 {
+			slack.PostMessage(c.Channel, "No message detected")
+		} else {
+			k := functions.GetKeys(controllerActions)
+			subcommand := strings.ToLower(c.Fields[1])
+			if functions.Contains(k, subcommand) {
+				f := controllerActions[subcommand]
+				f(c)
+			} else {
+				b.sendCompletion(c)
+			}
+		}
+	} else {
+		slack.PostMessage(c.Channel, "The "+b.name+" is disabled")
+	}
+}
+
 func (b *openAIBot) sendCompletion(c slack.CommandInfo) {
 	prompt := strings.Join(c.Fields[2:], " ")
 	req := gogpt.CompletionRequest{
@@ -69,4 +91,8 @@ func (b *openAIBot) sendCompletion(c slack.CommandInfo) {
 	m := resp.Choices[0].Text
 	go b.logger.WithField("prompt", prompt).Info(m)
 	slack.PostMessage(c.Channel, m)
+}
+
+func (b *openAIBot) modifyParameters(c slack.CommandInfo) {
+
 }
