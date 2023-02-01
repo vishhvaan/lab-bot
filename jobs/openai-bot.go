@@ -16,13 +16,13 @@ type openAIBot struct {
 	labJob
 	gptClient        *gogpt.Client
 	gptContext       context.Context
+	defaultTimeout   time.Duration
 	model            string
 	maxTokens        int
 	Temperature      float32
 	TopP             float32
 	FrequencyPenalty float32
 	PresencePenalty  float32
-	defaultTimeout   time.Duration
 }
 
 func (b *openAIBot) init() {
@@ -38,6 +38,7 @@ func (b *openAIBot) init() {
 	b.gptClient = gogpt.NewClient(config.Secrets["openai-api-key"])
 	b.gptContext = context.Background()
 	b.defaultTimeout = 10 * time.Second
+
 	b.model = "text-davinci-003"
 	b.maxTokens = 10
 	b.Temperature = 0.5

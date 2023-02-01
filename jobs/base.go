@@ -51,6 +51,19 @@ func CreateHandler() (jh *JobHandler) {
 		},
 	}
 
+	jobs[">"] = &openAIBot{
+		labJob: labJob{
+			name:    "OpenAI Bot",
+			keyword: ">",
+			active:  true,
+			desc:    "Passes queries to the OpenAI API and returns top completion",
+			logger: jobLogger.WithFields(log.Fields{
+				"jobtype": "bot",
+				"job":     "openAIBot",
+			}),
+		},
+	}
+
 	return &JobHandler{
 		jobs:   jobs,
 		logger: jobLogger,
