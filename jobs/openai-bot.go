@@ -71,7 +71,7 @@ func (b *openAIBot) commandProcessor(c slack.CommandInfo) {
 }
 
 func (b *openAIBot) sendCompletion(c slack.CommandInfo) {
-	prompt := strings.Join(c.Fields[2:], " ")
+	prompt := strings.Join(c.Fields[1:], " ")
 	req := gogpt.CompletionRequest{
 		Model:     b.model,
 		MaxTokens: b.maxTokens,
@@ -85,7 +85,7 @@ func (b *openAIBot) sendCompletion(c slack.CommandInfo) {
 	resp, err := b.gptClient.CreateCompletion(cont, req)
 	if err != nil {
 		go b.logger.WithField("prompt", prompt).WithError(err).Warn("Could not find response for the prompt")
-		slack.PostMessage(c.Channel, "Could not find response for the prompt")
+		slack.PostMessage(c.Channel, "Could not find response for the prompt. "+err.Error())
 		return
 	}
 
