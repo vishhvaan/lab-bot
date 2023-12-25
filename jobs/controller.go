@@ -72,6 +72,7 @@ func (cj *controllerJob) commandProcessor(c slack.CommandInfo) {
 			"off":      cj.TurnOff,
 			"status":   cj.getPowerStatus,
 			"schedule": cj.scheduleHandler,
+			"force":    cj.forcePower,
 		}
 		if len(c.Fields) == 1 {
 			cj.getPowerStatus(c)
@@ -192,16 +193,20 @@ func (cj *controllerJob) loadPowerStateFromDB() (err error) {
 	return err
 }
 
-func (cj *controllerJob) TurnOn(c slack.CommandInfo) {
-	if commandCheck(c, 2, cj.logger) {
-		if cj.powerState == "on" {
-			message := "The " + cj.machineName + " is already on"
+func (cj *controllerJob) powerControl(c slack.CommandInfo, powerState string, force bool) {
+	powerFunctions := map[string]func() error{
+		"on":  cj.customOn,
+		"off": cj.customOff,
+	}
+	if commandCheck(c, 2, cj.logger) && !force {
+		if cj.powerState == powerState {
+			message := "The " + cj.machineName + " is already " + powerState
 			go cj.logger.Info(message)
 			slack.PostMessage(c.Channel, message)
 		} else {
-			err := cj.customOn()
+			err := powerFunctions[powerState]()
 			cj.lastPowerOn = time.Now()
-			cj.powerState = "on"
+			cj.powerState = powerState
 			if cj.scheduling.Set {
 				cj.scheduling.ModifyPowerMessage(cj.name, cj.powerState)
 			}
@@ -211,20 +216,37 @@ func (cj *controllerJob) TurnOn(c slack.CommandInfo) {
 	}
 }
 
+func (cj *controllerJob) TurnOn(c slack.CommandInfo) {
+	cj.powerControl(c, "on", false)
+}
+
 func (cj *controllerJob) TurnOff(c slack.CommandInfo) {
-	if commandCheck(c, 2, cj.logger) {
-		if cj.powerState == "off" {
-			message := "The " + cj.machineName + " is already off"
-			go cj.logger.Info(message)
-			slack.PostMessage(c.Channel, message)
+	cj.powerControl(c, "on", false)
+}
+
+func (cj *controllerJob) turnOnForce(c slack.CommandInfo) {
+	cj.powerControl(c, "on", true)
+}
+
+func (cj *controllerJob) turnOffForce(c slack.CommandInfo) {
+	cj.powerControl(c, "on", true)
+}
+
+func (cj *controllerJob) forcePower(c slack.CommandInfo) {
+	forceActions := map[string]action{
+		"on":  cj.turnOnForce,
+		"off": cj.turnOffForce,
+	}
+	if len(c.Fields) == 2 {
+		cj.errorMsg(c.Fields, c.Channel, "Force on or off?")
+	} else if len(c.Fields) > 2 {
+		k := functions.GetKeys(forceActions)
+		subcommand := strings.ToLower(c.Fields[2])
+		if functions.Contains(k, subcommand) {
+			f := forceActions[subcommand]
+			f(c)
 		} else {
-			err := cj.customOff()
-			cj.powerState = "off"
-			if cj.scheduling.Set {
-				cj.scheduling.ModifyPowerMessage(cj.name, cj.powerState)
-			}
-			cj.slackPowerResponse(cj.powerState, err, c)
-			cj.updatePowerStateInDB()
+			cj.errorMsg(c.Fields, c.Channel, "I'm not sure what you sayin")
 		}
 	}
 }
