@@ -198,7 +198,11 @@ func (cj *controllerJob) powerControl(c slack.CommandInfo, powerState string, fo
 		"on":  cj.customOn,
 		"off": cj.customOff,
 	}
-	if commandCheck(c, 2, cj.logger) && !force {
+	numParams := 2
+	if force {
+		numParams = 3
+	}
+	if commandCheck(c, numParams, cj.logger) && !force {
 		if cj.powerState == powerState {
 			message := "The " + cj.machineName + " is already " + powerState
 			go cj.logger.Info(message)
