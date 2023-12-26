@@ -225,7 +225,7 @@ func (cj *controllerJob) TurnOn(c slack.CommandInfo) {
 }
 
 func (cj *controllerJob) TurnOff(c slack.CommandInfo) {
-	cj.powerControl(c, "on", false)
+	cj.powerControl(c, "off", false)
 }
 
 func (cj *controllerJob) turnOnForce(c slack.CommandInfo) {
@@ -233,7 +233,7 @@ func (cj *controllerJob) turnOnForce(c slack.CommandInfo) {
 }
 
 func (cj *controllerJob) turnOffForce(c slack.CommandInfo) {
-	cj.powerControl(c, "on", true)
+	cj.powerControl(c, "off", true)
 }
 
 func (cj *controllerJob) forcePower(c slack.CommandInfo) {
