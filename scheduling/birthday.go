@@ -1,12 +1,12 @@
 package scheduling
 
-// import (
-// 	"github.com/go-co-op/gocron"
-// 	log "github.com/sirupsen/logrus"
+import (
+	log "github.com/sirupsen/logrus"
+)
 
-// 	"github.com/vishhvaan/lab-bot/logging"
-// )
-
-// func ScheduleBirthdays() {
-
-// }
+type BirthdaySchedule struct {
+	birthdayMessageChannel string
+	Logger                 *log.Entry
+	Sched                  map[string]*Schedule
+	DbPath                 []string
+}

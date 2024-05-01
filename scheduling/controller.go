@@ -240,7 +240,7 @@ func (cs *ControllerSchedule) DeletePowerMessage() error {
 
 func (cs *ControllerSchedule) DeleteOtherPowerMessage(name string, timestamp string) error {
 	if cs.powerMessageChannel == "" || cs.powerMessageTimestamp == "" {
-		errorMsg := "Power message channel is undefined, cannot delete power messages."
+		errorMsg := "power message channel is undefined, cannot delete power messages"
 		cs.Logger.Error(errorMsg)
 		return errors.New(errorMsg)
 	}
