@@ -3,6 +3,7 @@ package jobs
 import (
 	"strings"
 
+	"github.com/vishhvaan/lab-bot/db"
 	"github.com/vishhvaan/lab-bot/functions"
 	"github.com/vishhvaan/lab-bot/scheduling"
 	"github.com/vishhvaan/lab-bot/slack"
@@ -10,17 +11,22 @@ import (
 
 type birthdayJob struct {
 	labJob
-	dbPath     []string
-	scheduling scheduling.BirthdaySchedule
+	dbPath           []string
+	birthdaysdDbPath []string
+	scheduling       scheduling.BirthdaySchedule
 }
 
 func (bj *birthdayJob) init() {
 	bj.labJob.init()
 
 	bj.dbPath = append([]string{"jobs", "controller"}, bj.keyword)
+	bj.birthdaysdDbPath = append(bj.dbPath, "birthdays")
 
 	// ensure database is there or create database
-
+	bj.scheduling.Sched = make(map[string]*scheduling.Schedule)
+	bj.scheduling.DbPath = append(bj.dbPath, "scheduling")
+	bj.checkCreateBucket()
+	bj.checkBirthdaysExist()
 }
 
 func (bj *birthdayJob) commandProcessor(c slack.CommandInfo) {
@@ -45,6 +51,24 @@ func (bj *birthdayJob) commandProcessor(c slack.CommandInfo) {
 	} else {
 		slack.PostMessage(c.Channel, "The "+bj.name+" is disabled")
 	}
+}
+
+func (bj *birthdayJob) checkCreateBucket() (exists bool) {
+	exists = db.CheckBucketExists(bj.birthdaysdDbPath) &&
+		db.CheckBucketExists(bj.scheduling.DbPath)
+
+	if !exists {
+		db.CreateBucket(birthdaysLocation)
+		db.CreateBucket(bj.scheduling.DbPath)
+		db.CreateBucket(append(bj.scheduling.DbPath, "records"))
+	}
+
+	return exists
+}
+
+func (bj *birthdayJob) checkBirthdaysExist() (numBirthdays int) {
+
+	// decide organization of birthday db, run check on number of birthdays that exist
 }
 
 func (bj *birthdayJob) errorMsg(fields []string, channel string, message string) {
