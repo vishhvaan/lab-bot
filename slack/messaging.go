@@ -144,7 +144,7 @@ func (sc *slackClient) PinMessage(channelID string, timestamp string) (err error
 		Timestamp: timestamp,
 	})
 	if err != nil {
-		sc.logger.WithField("err", err).Error("Couldn't pin message on Slack.")
+		sc.logger.WithField("err", err).Error("couldn't pin message on Slack")
 	} else {
 		sc.logger.WithFields(log.Fields{
 			"channelID": channelID,
@@ -165,13 +165,13 @@ func (sc *slackClient) CommandStreamer(command string, outputType string, channe
 	} else if outputType == "err" {
 		stdpipe, err = cmd.StderrPipe()
 	} else {
-		errMsg := "Command streamer needs a correct output type"
+		errMsg := "command streamer needs a correct output type"
 		sc.logger.WithField("err", err).Error(errMsg)
 		return output, errors.New(errMsg)
 	}
 
 	if err != nil {
-		errMsg := "Cannot create standard pipe"
+		errMsg := "cannot create standard pipe"
 		sc.logger.WithField("err", err).Error(errMsg)
 		return output, errors.New(errMsg)
 	}
@@ -199,7 +199,7 @@ func (sc *slackClient) CommandStreamer(command string, outputType string, channe
 
 	err = cmd.Start()
 	if err != nil {
-		errMsg := "Error starting Cmd"
+		errMsg := "error starting Cmd"
 		sc.logger.WithFields(log.Fields{
 			"err":     err,
 			"command": command,
@@ -209,7 +209,7 @@ func (sc *slackClient) CommandStreamer(command string, outputType string, channe
 
 	err = cmd.Wait()
 	if err != nil {
-		errMsg := "Error waiting for Cmd"
+		errMsg := "error waiting for Cmd"
 		sc.logger.WithFields(log.Fields{
 			"err":     err,
 			"command": command,

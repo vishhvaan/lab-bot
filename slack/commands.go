@@ -6,6 +6,7 @@ type CommandInfo struct {
 	Fields    []string
 	Channel   string
 	TimeStamp string
+	User      string
 }
 
 func (sc *slackClient) RunSocketMode() {

@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"strings"
+	"time"
 
 	"github.com/vishhvaan/lab-bot/db"
 	"github.com/vishhvaan/lab-bot/functions"
@@ -14,6 +15,11 @@ type birthdayJob struct {
 	dbPath           []string
 	birthdaysdDbPath []string
 	scheduling       scheduling.BirthdaySchedule
+}
+
+type birthday struct {
+	date time.Time
+	user string
 }
 
 func (bj *birthdayJob) init() {
@@ -69,6 +75,8 @@ func (bj *birthdayJob) checkCreateBucket() (exists bool) {
 func (bj *birthdayJob) checkBirthdaysExist() (numBirthdays int) {
 
 	// decide organization of birthday db, run check on number of birthdays that exist
+
+	// organization birthdays/numeric month/key = day, value = user(s) slice
 }
 
 func (bj *birthdayJob) errorMsg(fields []string, channel string, message string) {

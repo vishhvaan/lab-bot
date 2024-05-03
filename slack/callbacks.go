@@ -36,6 +36,7 @@ func (sc *slackClient) commandInterpreter(ev *slackevents.AppMentionEvent) {
 				Fields:    fields,
 				Channel:   ev.Channel,
 				TimeStamp: ev.TimeStamp,
+				User:      ev.User,
 			}
 		}
 	}
