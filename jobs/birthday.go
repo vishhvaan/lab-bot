@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -59,24 +60,31 @@ func (bj *birthdayJob) commandProcessor(c slack.CommandInfo) {
 	}
 }
 
-func (bj *birthdayJob) checkCreateBucket() (exists bool) {
-	exists = db.CheckBucketExists(bj.birthdaysdDbPath) &&
-		db.CheckBucketExists(bj.scheduling.DbPath)
+// db organization birthdays/numeric month/key = day, value = user(s) slice
 
-	if !exists {
-		db.CreateBucket(birthdaysLocation)
+func (bj *birthdayJob) checkCreateBucket() (exists bool) {
+	if !db.CheckBucketExists(bj.birthdaysdDbPath) {
+		db.CreateBucket(bj.birthdaysdDbPath)
+		bj.createBirthdayDBStructure()
+	} else {
+		// verify that all the months exist
+	}
+
+	if !db.CheckBucketExists(bj.scheduling.DbPath) {
 		db.CreateBucket(bj.scheduling.DbPath)
-		db.CreateBucket(append(bj.scheduling.DbPath, "records"))
 	}
 
 	return exists
 }
 
-func (bj *birthdayJob) checkBirthdaysExist() (numBirthdays int) {
-
-	// decide organization of birthday db, run check on number of birthdays that exist
-
-	// organization birthdays/numeric month/key = day, value = user(s) slice
+func (bj *birthdayJob) createBirthdayDBStructure() error {
+	for i := 1; i <= 12; i++ {
+		err := db.CreateBucket(append(bj.birthdaysdDbPath, strconv.Itoa(i)))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (bj *birthdayJob) errorMsg(fields []string, channel string, message string) {
