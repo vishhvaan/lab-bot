@@ -9,6 +9,7 @@ require (
 )
 
 require (
+	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de // indirect
 	github.com/elastic/go-sysinfo v1.8.0 // indirect
 	github.com/elastic/go-windows v1.0.0 // indirect
 	github.com/go-co-op/gocron v1.15.0 // indirect

@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/araddon/dateparse"
 
 	"github.com/vishhvaan/lab-bot/db"
 	"github.com/vishhvaan/lab-bot/functions"
@@ -91,9 +94,9 @@ func (bj *birthdayJob) createBirthdayDBStructure() (err error) {
 	return nil
 }
 
-func (bj *birthdayJob) errorMsg(fields []string, channel string, message string) {
-	go bj.logger.WithField("fields", fields).Warn(message)
-	slack.PostMessage(channel, message)
+func (bj *birthdayJob) errorMsg(c slack.CommandInfo, err error, message string) {
+	go bj.logger.WithField("fields", c.Fields).WithError(err).Warn(message)
+	slack.PostMessage(c.Channel, message)
 }
 
 func (bj *birthdayJob) numerateBirthdays() (numBirthdays int, err error) {
@@ -115,4 +118,27 @@ func (bj *birthdayJob) numerateBirthdays() (numBirthdays int, err error) {
 	}
 
 	return numBirthdays, nil
+}
+
+// birthday record 10-24-2000
+func (bj *birthdayJob) recordBirthday(c slack.CommandInfo) {
+	if len(c.Fields) >= 3 {
+			birthday, err := dateparse.ParseAny(c.Fields[3])
+			if err != nil {
+				go bj.logger.WithField("fields", c.Fields).WithError(err).Warn("cannot parse date")
+				slack.PostMessage(c.Channel, "cannot parse date")
+				return
+			}
+			path := append(bj.birthdayDbPath, strconv.Itoa(int(birthday.Month())))
+			b, err := db.ReadValue(path, strconv.Itoa(birthday.Day()))
+			if err != nil {
+				go bj.logger.WithField("fields", c.Fields).WithError(err).Warn("cannot parse date")
+				slack.PostMessage(c.Channel, "cannot parse date")
+				return
+			}
+			var existingBirthdays []string
+			err = json.Unmarshal(b, &existingBirthdays)
+
+		}
+	}
 }
