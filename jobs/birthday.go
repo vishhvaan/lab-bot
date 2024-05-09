@@ -98,33 +98,52 @@ func (bj *birthdayJob) recordBirthday(c slack.CommandInfo) {
 			bj.errorMsg(c, err, "cannot parse date")
 			return
 		}
-		users, birthdays, err := db.GetAllKeysValues(bj.birthdayDbPath)
-		for i, u := range users {
-			if c.User == string(u) {
-				var oldBirthday time.Time
-				err = json.Unmarshal(birthdays[i], oldBirthday)
-				if err != nil {
-					bj.errorMsg(c, err, "cannot read existing birthday from db")
-					return
-				}
 
-				if oldBirthday == newBirthday {
-					slack.SendMessage(c.Channel, "This birthday is already on record")
-				} else {
-					slack.SendMessage(c.Channel, "There is a different birthday already on record for you, please delete it before entering a new one")
-				}
-				return
-			}
-		}
-
-		b, err := json.Marshal(newBirthday)
+		b, err := db.ReadValue(bj.birthdayDbPath, c.User)
 		if err != nil {
-			bj.errorMsg(c, err, "cannot convert birthday into json")
+			bj.errorMsg(c, err, "cannot read existing birthday from db")
 			return
 		}
-		err = db.AddValue(bj.birthdayDbPath, c.User, b)
-		if err != nil {
-			bj.errorMsg(c, err, "cannot record birthday to database")
+
+		if b == nil {
+			b, err := json.Marshal(newBirthday)
+			if err != nil {
+				bj.errorMsg(c, err, "cannot convert birthday into json")
+				return
+			}
+			err = db.AddValue(bj.birthdayDbPath, c.User, b)
+			if err != nil {
+				bj.errorMsg(c, err, "cannot record birthday to database")
+			}
+		} else {
+			var oldBirthday time.Time
+			err = json.Unmarshal(b, oldBirthday)
+			if err != nil {
+				bj.errorMsg(c, err, "cannot read existing birthday from db")
+				return
+			}
+
+			if oldBirthday == newBirthday {
+				slack.SendMessage(c.Channel, "This birthday is already on record")
+			} else {
+				slack.SendMessage(c.Channel, "There is a different birthday already on record for you, please delete it before entering a new one")
+			}
 		}
+	}
+}
+
+func (bj *birthdayJob) birthdayStatus(c slack.CommandInfo) {
+	b, err := db.ReadValue(bj.birthdayDbPath, c.User)
+	if err != nil {
+		bj.errorMsg(c, err, "cannot read existing birthday from db")
+		return
+	}
+
+	if b == nil {
+		slack.SendMessage(c.Channel, "No birthday in the database. Use the command 'birthday record 2006-10-24' to record your birthday")
+	} else {
+		var birthday time.Time
+		json.Unmarshal(b, birthday)
+		slack.SendMessage(c.Channel, "Your birthday is on "+birthday.Format(time.DateOnly))
 	}
 }
