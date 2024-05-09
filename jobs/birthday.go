@@ -66,13 +66,12 @@ func (bj *birthdayJob) commandProcessor(c slack.CommandInfo) {
 	}
 }
 
-// db organization birthdays/numeric month/key = day, value = user(s) slice
+// db organization birthdays/key = user, value = time.Time
 
 func (bj *birthdayJob) checkCreateBucket() (exists bool) {
 	if !db.CheckBucketExists(bj.birthdayDbPath) {
 		db.CreateBucket(bj.birthdayDbPath)
 	}
-	bj.createBirthdayDBStructure()
 
 	if !db.CheckBucketExists(bj.scheduling.DbPath) {
 		db.CreateBucket(bj.scheduling.DbPath)
@@ -81,64 +80,51 @@ func (bj *birthdayJob) checkCreateBucket() (exists bool) {
 	return exists
 }
 
-func (bj *birthdayJob) createBirthdayDBStructure() (err error) {
-	for i := 1; i <= 12; i++ {
-		monthPath := append(bj.birthdayDbPath, strconv.Itoa(i))
-		if !db.CheckBucketExists(monthPath) {
-			err = db.CreateBucket(monthPath)
-		}
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (bj *birthdayJob) errorMsg(c slack.CommandInfo, err error, message string) {
 	go bj.logger.WithField("fields", c.Fields).WithError(err).Warn(message)
 	slack.PostMessage(c.Channel, message)
 }
 
 func (bj *birthdayJob) numerateBirthdays() (numBirthdays int, err error) {
-	for i := 1; i <= 12; i++ {
-		monthPath := append(bj.birthdayDbPath, strconv.Itoa(i))
-		_, values, err := db.GetAllKeysValues(monthPath)
-		if err != nil {
-			return -1, err
-		}
-
-		for _, dayBirthdays := range values {
-			var users []string
-			err = json.Unmarshal(dayBirthdays, &users)
-			if err != nil {
-				return -1, err
-			}
-			numBirthdays += len(users)
-		}
-	}
-
-	return numBirthdays, nil
+	keys, _, err := db.GetAllKeysValues(bj.birthdayDbPath)
+	return len(keys), nil
 }
 
 // birthday record 10-24-2000
 func (bj *birthdayJob) recordBirthday(c slack.CommandInfo) {
 	if len(c.Fields) >= 3 {
-			birthday, err := dateparse.ParseAny(c.Fields[3])
-			if err != nil {
-				go bj.logger.WithField("fields", c.Fields).WithError(err).Warn("cannot parse date")
-				slack.PostMessage(c.Channel, "cannot parse date")
-				return
-			}
-			path := append(bj.birthdayDbPath, strconv.Itoa(int(birthday.Month())))
-			b, err := db.ReadValue(path, strconv.Itoa(birthday.Day()))
-			if err != nil {
-				go bj.logger.WithField("fields", c.Fields).WithError(err).Warn("cannot parse date")
-				slack.PostMessage(c.Channel, "cannot parse date")
-				return
-			}
-			var existingBirthdays []string
-			err = json.Unmarshal(b, &existingBirthdays)
+		newBirthday, err := dateparse.ParseAny(c.Fields[3])
+		if err != nil {
+			bj.errorMsg(c, err, "cannot parse date")
+			return
+		}
+		users, birthdays, err := db.GetAllKeysValues(bj.birthdayDbPath)
+		for i, u := range users {
+			if c.User == string(u) {
+				var oldBirthday time.Time
+				err = json.Unmarshal(birthdays[i], oldBirthday)
+				if err != nil {
+					bj.errorMsg(c, err, "cannot read existing birthday from db")
+					return
+				}
 
+				if oldBirthday == newBirthday {
+					slack.SendMessage(c.Channel, "This birthday is already on record")
+				} else {
+					slack.SendMessage(c.Channel, "There is a different birthday already on record for you, please delete it before entering a new one")
+				}
+				return
+			}
+		}
+
+		b, err := json.Marshal(newBirthday)
+		if err != nil {
+			bj.errorMsg(c, err, "cannot convert birthday into json")
+			return
+		}
+		err = db.AddValue(bj.birthdayDbPath, c.User, b)
+		if err != nil {
+			bj.errorMsg(c, err, "cannot record birthday to database")
 		}
 	}
 }
