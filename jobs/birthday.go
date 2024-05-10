@@ -16,20 +16,18 @@ import (
 
 type birthdayJob struct {
 	labJob
-	dbPath         []string
-	birthdayDbPath []string
-	scheduling     scheduling.BirthdaySchedule
+	dbPath     []string
+	scheduling scheduling.BirthdaySchedule
 }
 
 func (bj *birthdayJob) init() {
 	bj.labJob.init()
 
 	bj.dbPath = append([]string{"jobs", "controller"}, bj.keyword)
-	bj.birthdayDbPath = append(bj.dbPath, bj.keyword)
 
 	// ensure database is there or create database
-	bj.scheduling.Sched = make(map[string]*scheduling.Schedule)
-	bj.scheduling.DbPath = append(bj.dbPath, "scheduling")
+	bj.scheduling.Init(bj.dbPath)
+
 	bj.checkCreateBucket()
 	numBirthdays, err := bj.numerateBirthdays()
 
@@ -47,7 +45,7 @@ func (bj *birthdayJob) commandProcessor(c slack.CommandInfo) {
 		birthdayActions := map[string]action{
 			"record":   bj.recordBirthday,
 			"status":   bj.birthdayStatus,
-			"upcoming": bj.upcomingBirthdays,
+			"upcoming": bj.scheduling.UpcomingBirthdays,
 		}
 		if len(c.Fields) == 1 {
 			bj.birthdayStatus(c)
@@ -58,7 +56,8 @@ func (bj *birthdayJob) commandProcessor(c slack.CommandInfo) {
 				f := birthdayActions[subcommand]
 				f(c)
 			} else {
-				bj.errorMsg(c.Fields, c.Channel, "Wrong syntax, young padwan")
+				slack.PostMessage(c.Channel, "Wrong syntax, young padwan")
+				bj.logger.WithField("fields", c.Fields).Info("Wrong syntax for birthday")
 			}
 		}
 	} else {
@@ -68,16 +67,18 @@ func (bj *birthdayJob) commandProcessor(c slack.CommandInfo) {
 
 // db organization birthdays/key = user, value = time.Time
 
-func (bj *birthdayJob) checkCreateBucket() (exists bool) {
-	if !db.CheckBucketExists(bj.birthdayDbPath) {
-		db.CreateBucket(bj.birthdayDbPath)
+func (bj *birthdayJob) checkCreateBucket() {
+	if !db.CheckBucketExists(append(bj.dbPath, "records")) {
+		db.CreateBucket(append(bj.dbPath, "records"))
 	}
 
-	if !db.CheckBucketExists(bj.scheduling.DbPath) {
-		db.CreateBucket(bj.scheduling.DbPath)
+	if !db.CheckBucketExists(append(bj.dbPath, "schedule")) {
+		db.CreateBucket(append(bj.dbPath, "schedule"))
 	}
 
-	return exists
+	if !db.CheckBucketExists(append(bj.dbPath, "upcoming")) {
+		db.CreateBucket(append(bj.dbPath, "upcoming"))
+	}
 }
 
 func (bj *birthdayJob) errorMsg(c slack.CommandInfo, err error, message string) {
@@ -86,54 +87,12 @@ func (bj *birthdayJob) errorMsg(c slack.CommandInfo, err error, message string) 
 }
 
 func (bj *birthdayJob) numerateBirthdays() (numBirthdays int, err error) {
-	keys, _, err := db.GetAllKeysValues(bj.birthdayDbPath)
+	keys, _, err := db.GetAllKeysValues(append(bj.dbPath, "records"))
 	return len(keys), nil
 }
 
-// birthday record 10-24-2000
-func (bj *birthdayJob) recordBirthday(c slack.CommandInfo) {
-	if len(c.Fields) >= 3 {
-		newBirthday, err := dateparse.ParseAny(c.Fields[3])
-		if err != nil {
-			bj.errorMsg(c, err, "cannot parse date")
-			return
-		}
-
-		b, err := db.ReadValue(bj.birthdayDbPath, c.User)
-		if err != nil {
-			bj.errorMsg(c, err, "cannot read existing birthday from db")
-			return
-		}
-
-		if b == nil {
-			b, err := json.Marshal(newBirthday)
-			if err != nil {
-				bj.errorMsg(c, err, "cannot convert birthday into json")
-				return
-			}
-			err = db.AddValue(bj.birthdayDbPath, c.User, b)
-			if err != nil {
-				bj.errorMsg(c, err, "cannot record birthday to database")
-			}
-		} else {
-			var oldBirthday time.Time
-			err = json.Unmarshal(b, oldBirthday)
-			if err != nil {
-				bj.errorMsg(c, err, "cannot read existing birthday from db")
-				return
-			}
-
-			if oldBirthday == newBirthday {
-				slack.SendMessage(c.Channel, "This birthday is already on record")
-			} else {
-				slack.SendMessage(c.Channel, "There is a different birthday already on record for you, please delete it before entering a new one")
-			}
-		}
-	}
-}
-
 func (bj *birthdayJob) birthdayStatus(c slack.CommandInfo) {
-	b, err := db.ReadValue(bj.birthdayDbPath, c.User)
+	b, err := db.ReadValue(append(bj.dbPath, "records"), c.User)
 	if err != nil {
 		bj.errorMsg(c, err, "cannot read existing birthday from db")
 		return
@@ -145,5 +104,48 @@ func (bj *birthdayJob) birthdayStatus(c slack.CommandInfo) {
 		var birthday time.Time
 		json.Unmarshal(b, birthday)
 		slack.SendMessage(c.Channel, "Your birthday is on "+birthday.Format(time.DateOnly))
+	}
+}
+
+// birthday record 10-24-2000
+func (bj *birthdayJob) recordBirthday(c slack.CommandInfo) {
+	if len(c.Fields) >= 3 {
+		newBirthday, err := dateparse.ParseAny(c.Fields[3])
+		if err != nil {
+			bj.errorMsg(c, err, "cannot parse date")
+			return
+		}
+		newBirthday.Truncate(24 * time.Hour)
+
+		b, err := db.ReadValue(append(bj.dbPath, "records"), c.User)
+		if err != nil {
+			bj.errorMsg(c, err, "cannot read existing birthday from db")
+			return
+		}
+
+		if b == nil {
+			b, err := newBirthday.MarshalJSON()
+			if err != nil {
+				bj.errorMsg(c, err, "cannot convert birthday into json")
+				return
+			}
+			err = db.AddValue(append(bj.dbPath, "records"), c.User, b)
+			if err != nil {
+				bj.errorMsg(c, err, "cannot record birthday to database")
+			}
+		} else {
+			var oldBirthday time.Time
+			err = json.Unmarshal(b, &oldBirthday)
+			if err != nil {
+				bj.errorMsg(c, err, "cannot read existing birthday from db")
+				return
+			}
+
+			if oldBirthday == newBirthday {
+				slack.SendMessage(c.Channel, "This birthday is already on record")
+			} else {
+				slack.SendMessage(c.Channel, "There is a different birthday already on record for you, please delete it before entering a new one")
+			}
+		}
 	}
 }

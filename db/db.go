@@ -186,6 +186,31 @@ func DeleteValue(path []string, key string) error {
 	return err
 }
 
+func RunCallbackOnEachKey(path []string, cb func(key []byte, value []byte)) (err error) {
+	err = botDB.db.View(func(tx *bolt.Tx) error {
+		b, err := bucketFinder(tx, path)
+		if err != nil {
+			return err
+		}
+
+		c := b.Cursor()
+
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			cb(k, v)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		botDB.logger.WithError(err).WithFields(log.Fields{
+			"path": path,
+		}).Error("Cannot get keys or values in this bucket")
+	}
+
+	return err
+}
+
 func GetAllKeysValues(path []string) (keys [][]byte, values [][]byte, err error) {
 	err = botDB.db.View(func(tx *bolt.Tx) error {
 		b, err := bucketFinder(tx, path)
