@@ -31,30 +31,39 @@ func (bs *BirthdaySchedule) UpcomingBirthdays(c slack.CommandInfo) {
 	}
 
 	var lastUpdated time.Time
-	err = lastUpdated.UnmarshalJSON(lU)
-	if err != nil {
-		bs.errorMsg(c, err, "cannot decode birthday")
-		return
-	}
-
 	var upcomingBirthdays map[string][]string
-	if lastUpdated.Truncate(24*time.Hour) == time.Now().Truncate(24*time.Hour) {
-		uB, err := db.ReadValue(append(bs.dbPath, "upcoming"), "lastUpdated")
+
+	if lU == nil {
+		upcomingBirthdays, err = bs.generateUpcomingBirthdays()
+		if err != nil {
+			bs.errorMsg(c, err, "cannot generate upcoming birthdays")
+			return
+		}
+	} else {
+		err = lastUpdated.UnmarshalJSON(lU)
 		if err != nil {
 			bs.errorMsg(c, err, "cannot decode birthday")
 			return
 		}
 
-		err = json.Unmarshal(uB, &upcomingBirthdays)
-		if err != nil {
-			bs.errorMsg(c, err, "cannot read upcoming birthdays from db")
-			return
-		}
-	} else {
-		upcomingBirthdays, err = bs.generateUpcomingBirthdays()
-		if err != nil {
-			bs.errorMsg(c, err, "cannot generate upcoming birthdays")
-			return
+		if lastUpdated.Truncate(24*time.Hour) == time.Now().Truncate(24*time.Hour) {
+			uB, err := db.ReadValue(append(bs.dbPath, "upcoming"), "birthdays")
+			if err != nil {
+				bs.errorMsg(c, err, "cannot decode birthday")
+				return
+			}
+
+			err = json.Unmarshal(uB, &upcomingBirthdays)
+			if err != nil {
+				bs.errorMsg(c, err, "cannot read upcoming birthdays from db")
+				return
+			}
+		} else {
+			upcomingBirthdays, err = bs.generateUpcomingBirthdays()
+			if err != nil {
+				bs.errorMsg(c, err, "cannot generate upcoming birthdays")
+				return
+			}
 		}
 	}
 
@@ -82,7 +91,7 @@ func (bs *BirthdaySchedule) generateUpcomingBirthdays() (upcomingBirthdays map[s
 		if err != nil {
 			return err
 		}
-		birthday = birthday.Truncate(24 * time.Hour)
+		birthday = time.Date(time.Now().Year(), birthday.Month(), birthday.Day(), 0, 0, 0, 0, birthday.Location())
 		if birthday == today {
 			upcomingBirthdays["todayBDs"] = append(upcomingBirthdays["todayBDs"], string(userKey))
 		} else if birthday == tomorrow {

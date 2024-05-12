@@ -3,9 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"math/rand"
 	"path"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -26,7 +24,6 @@ var (
 )
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
 	logging.Setup()
 	exePath := files.FindExeDir()
 	flag.StringVar(&membersFile, "members", path.Join(exePath, "members.yml"), "Location of the members file")

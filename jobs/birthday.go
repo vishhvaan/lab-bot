@@ -32,7 +32,7 @@ func (bj *birthdayJob) init() {
 
 	if err == nil {
 		bj.logger.Info(bj.name + " loaded")
-		slack.Message(bj.name + " loaded. " + strconv.Itoa(numBirthdays) + "birthdays found.")
+		slack.Message(bj.name + " loaded. " + strconv.Itoa(numBirthdays) + " birthdays found.")
 	} else {
 		bj.logger.WithError(err).Error(bj.name + " cannot initialize")
 	}
@@ -109,7 +109,7 @@ func (bj *birthdayJob) birthdayStatus(c slack.CommandInfo) {
 // birthday record 10-24-2000
 func (bj *birthdayJob) recordBirthday(c slack.CommandInfo) {
 	if len(c.Fields) >= 3 {
-		newBirthday, err := dateparse.ParseAny(c.Fields[3])
+		newBirthday, err := dateparse.ParseAny(c.Fields[2])
 		if err != nil {
 			bj.errorMsg(c, err, "cannot parse date")
 			return
@@ -132,6 +132,8 @@ func (bj *birthdayJob) recordBirthday(c slack.CommandInfo) {
 			if err != nil {
 				bj.errorMsg(c, err, "cannot record birthday to database")
 			}
+
+			slack.React(c.TimeStamp, c.Channel, "tada")
 		} else {
 			var oldBirthday time.Time
 			err = oldBirthday.UnmarshalJSON(b)
