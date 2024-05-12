@@ -7,6 +7,7 @@ import (
 
 	"github.com/vishhvaan/lab-bot/functions"
 	"github.com/vishhvaan/lab-bot/logging"
+	"github.com/vishhvaan/lab-bot/scheduling"
 	"github.com/vishhvaan/lab-bot/slack"
 )
 
@@ -60,6 +61,26 @@ func CreateHandler() (jh *JobHandler) {
 			logger: jobLogger.WithFields(log.Fields{
 				"jobtype": "bot",
 				"job":     "openAIBot",
+			}),
+		},
+	}
+
+	jobs["birthday"] = &birthdayJob{
+		labJob: labJob{
+			name:    "Birthday Bot",
+			keyword: "birthday",
+			active:  true,
+			desc:    "Monitors, alerts, and records member birthdays",
+			logger: jobLogger.WithFields(log.Fields{
+				"jobtype": "bot",
+				"job":     "birthdayBot",
+			}),
+		},
+		scheduling: scheduling.BirthdaySchedule{
+			Logger: jobLogger.WithFields(log.Fields{
+				"jobtype": "bot",
+				"job":     "birthdayBot",
+				"task":    "scheduling",
 			}),
 		},
 	}

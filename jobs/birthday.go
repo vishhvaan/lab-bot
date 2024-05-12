@@ -25,7 +25,7 @@ func (bj *birthdayJob) init() {
 	bj.dbPath = append([]string{"jobs", "controller"}, bj.keyword)
 
 	// ensure database is there or create database
-	bj.scheduling.Init(bj.dbPath)
+	bj.scheduling.Init(bj.dbPath, bj.logger)
 
 	bj.checkCreateBucket()
 	numBirthdays, err := bj.numerateBirthdays()

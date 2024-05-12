@@ -14,11 +14,11 @@ import (
 type BirthdaySchedule struct {
 	birthdayMessageChannel string
 	dbPath                 []string
-	logger                 *log.Entry
+	Logger                 *log.Entry
 	sched                  map[string]*Schedule
 }
 
-func (bs *BirthdaySchedule) Init(dbPath []string) {
+func (bs *BirthdaySchedule) Init(dbPath []string, logger *log.Entry) {
 	bs.sched = make(map[string]*Schedule)
 	bs.dbPath = dbPath
 }
@@ -150,6 +150,6 @@ func (bs *BirthdaySchedule) formatUpcomingBirthdays(upcomingBirthdays map[string
 }
 
 func (bs *BirthdaySchedule) errorMsg(c slack.CommandInfo, err error, message string) {
-	go bs.logger.WithField("fields", c.Fields).WithError(err).Warn(message)
+	go bs.Logger.WithField("fields", c.Fields).WithError(err).Warn(message)
 	slack.PostMessage(c.Channel, message)
 }
