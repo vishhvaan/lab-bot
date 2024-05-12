@@ -186,7 +186,7 @@ func DeleteValue(path []string, key string) error {
 	return err
 }
 
-func RunCallbackOnEachKey(path []string, cb func(key []byte, value []byte)) (err error) {
+func RunCallbackOnEachKey(path []string, cb func(key []byte, value []byte) error) (err error) {
 	err = botDB.db.View(func(tx *bolt.Tx) error {
 		b, err := bucketFinder(tx, path)
 		if err != nil {
@@ -196,7 +196,10 @@ func RunCallbackOnEachKey(path []string, cb func(key []byte, value []byte)) (err
 		c := b.Cursor()
 
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			cb(k, v)
+			err = cb(k, v)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil

@@ -53,3 +53,7 @@ func PinMessage(channelID string, timestamp string) error {
 func CommandStreamer(command string, outputType string, channelID string, timeout int) (output []string, err error) {
 	return packageSlackClient.CommandStreamer(command, outputType, channelID, timeout)
 }
+
+func GetUserName(userID string) (user string) {
+	return packageSlackClient.getUserName(userID)
+}

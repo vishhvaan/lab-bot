@@ -1,7 +1,6 @@
 package jobs
 
 import (
-	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
@@ -88,7 +87,7 @@ func (bj *birthdayJob) errorMsg(c slack.CommandInfo, err error, message string) 
 
 func (bj *birthdayJob) numerateBirthdays() (numBirthdays int, err error) {
 	keys, _, err := db.GetAllKeysValues(append(bj.dbPath, "records"))
-	return len(keys), nil
+	return len(keys), err
 }
 
 func (bj *birthdayJob) birthdayStatus(c slack.CommandInfo) {
@@ -102,7 +101,7 @@ func (bj *birthdayJob) birthdayStatus(c slack.CommandInfo) {
 		slack.SendMessage(c.Channel, "No birthday in the database. Use the command 'birthday record 2006-10-24' to record your birthday")
 	} else {
 		var birthday time.Time
-		json.Unmarshal(b, birthday)
+		birthday.UnmarshalJSON(b)
 		slack.SendMessage(c.Channel, "Your birthday is on "+birthday.Format(time.DateOnly))
 	}
 }
@@ -115,7 +114,7 @@ func (bj *birthdayJob) recordBirthday(c slack.CommandInfo) {
 			bj.errorMsg(c, err, "cannot parse date")
 			return
 		}
-		newBirthday.Truncate(24 * time.Hour)
+		newBirthday = newBirthday.Truncate(24 * time.Hour)
 
 		b, err := db.ReadValue(append(bj.dbPath, "records"), c.User)
 		if err != nil {
@@ -135,7 +134,7 @@ func (bj *birthdayJob) recordBirthday(c slack.CommandInfo) {
 			}
 		} else {
 			var oldBirthday time.Time
-			err = json.Unmarshal(b, &oldBirthday)
+			err = oldBirthday.UnmarshalJSON(b)
 			if err != nil {
 				bj.errorMsg(c, err, "cannot read existing birthday from db")
 				return
