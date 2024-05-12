@@ -102,19 +102,30 @@ func (bj *birthdayJob) birthdayStatus(c slack.CommandInfo) {
 	} else {
 		var birthday time.Time
 		birthday.UnmarshalJSON(b)
-		slack.SendMessage(c.Channel, "Your birthday is on "+birthday.Format(time.DateOnly))
+		slack.SendMessage(c.Channel, "Your birthday is on "+birthday.UTC().Format("Jan 02 (2006)"))
 	}
 }
 
 // birthday record 10-24-2000
 func (bj *birthdayJob) recordBirthday(c slack.CommandInfo) {
+	var force bool
+	if len(c.Fields) > 3 {
+		if c.Fields[3] == "force" {
+			force = true
+		} else {
+			slack.SendMessage(c.Channel, "only the force flag is supported")
+			return
+		}
+	}
+
 	if len(c.Fields) >= 3 {
 		newBirthday, err := dateparse.ParseAny(c.Fields[2])
 		if err != nil {
-			bj.errorMsg(c, err, "cannot parse date")
+			go bj.logger.WithField("fields", c.Fields).WithError(err).Warn("cannot parse date")
+			slack.PostMessage(c.Channel, "cannot parse date: "+err.Error())
 			return
 		}
-		newBirthday = newBirthday.Truncate(24 * time.Hour)
+		newBirthday = newBirthday.Truncate(24 * time.Hour).In(time.Now().Location())
 
 		b, err := db.ReadValue(append(bj.dbPath, "records"), c.User)
 		if err != nil {
@@ -122,7 +133,7 @@ func (bj *birthdayJob) recordBirthday(c slack.CommandInfo) {
 			return
 		}
 
-		if b == nil {
+		if b == nil || force {
 			b, err := newBirthday.MarshalJSON()
 			if err != nil {
 				bj.errorMsg(c, err, "cannot convert birthday into json")
