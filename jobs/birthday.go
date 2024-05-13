@@ -43,6 +43,7 @@ func (bj *birthdayJob) commandProcessor(c slack.CommandInfo) {
 	if bj.active {
 		birthdayActions := map[string]action{
 			"record":   bj.recordBirthday,
+			"delete":   bj.deleteBirthday,
 			"status":   bj.birthdayStatus,
 			"upcoming": bj.scheduling.UpcomingBirthdays,
 		}
@@ -160,4 +161,32 @@ func (bj *birthdayJob) recordBirthday(c slack.CommandInfo) {
 			}
 		}
 	}
+}
+
+func (bj *birthdayJob) deleteBirthday(c slack.CommandInfo) {
+	if len(c.Fields) > 2 {
+		go bj.logger.WithField("fields", c.Fields).Warn("too many fields")
+		slack.SendMessage(c.Channel, "This birthday is already on record")
+		return
+	}
+
+	b, err := db.ReadValue(append(bj.dbPath, "records"), c.User)
+	if err != nil {
+		bj.errorMsg(c, err, "cannot read existing birthday from db")
+		return
+	}
+
+	if b == nil {
+		slack.SendMessage(c.Channel, "There is no birthday on record for you")
+		return
+	}
+
+	err = db.DeleteValue(append(bj.dbPath, "records"), c.User)
+	if err != nil {
+		bj.errorMsg(c, err, "cannot delete birthday")
+		return
+	}
+
+	slack.SendMessage(c.Channel, "Birthday deleted!")
+
 }
