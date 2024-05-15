@@ -28,8 +28,10 @@ func (bs *BirthdaySchedule) Init(dbPath []string, logger *log.Entry) {
 
 	bs.scheduler = gocron.NewScheduler(time.Now().Local().Location())
 	bs.scheduler.Cron(bs.CronExp).Do(func() {
+		bs.Logger.Info("running daily congratulate")
 		bs.congratulate(bs.BirthdayMessageChannel)
 	})
+
 	exprDesc, err := crondesc.NewDescriptor()
 	if err != nil {
 		bs.Logger.Error("cannot create cron descriptor")
@@ -38,9 +40,10 @@ func (bs *BirthdaySchedule) Init(dbPath []string, logger *log.Entry) {
 	if err != nil {
 		bs.Logger.Error("cannot convert cron exp to description")
 	}
+
 	bs.scheduler.StartAsync()
-	slack.Message("Sceduling daily birthday messages at " + scheduledText)
-	bs.Logger.Info("daily birthday messages at " + scheduledText)
+	slack.Message("Scheduling daily birthday messages " + scheduledText)
+	bs.Logger.Info("daily birthday messages " + scheduledText)
 }
 
 func (bs *BirthdaySchedule) congratulate(channel string) {
