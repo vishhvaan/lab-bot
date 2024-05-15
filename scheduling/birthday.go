@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-co-op/gocron"
+	crondesc "github.com/lnquy/cron"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/vishhvaan/lab-bot/db"
@@ -29,6 +30,17 @@ func (bs *BirthdaySchedule) Init(dbPath []string, logger *log.Entry) {
 	bs.scheduler.Cron(bs.CronExp).Do(func() {
 		bs.congratulate(bs.BirthdayMessageChannel)
 	})
+	exprDesc, err := crondesc.NewDescriptor()
+	if err != nil {
+		bs.Logger.Error("cannot create cron descriptor")
+	}
+	scheduledText, err := exprDesc.ToDescription(bs.CronExp, crondesc.Locale_en)
+	if err != nil {
+		bs.Logger.Error("cannot convert cron exp to description")
+	}
+	bs.scheduler.StartAsync()
+	slack.Message("Sceduling daily birthday messages at " + scheduledText)
+	bs.Logger.Info("daily birthday messages at " + scheduledText)
 }
 
 func (bs *BirthdaySchedule) congratulate(channel string) {
@@ -49,6 +61,7 @@ func (bs *BirthdaySchedule) congratulate(channel string) {
 		bs.Logger.Info("birthdays found for today")
 		slack.SendMessage(channel, birthdayMessage)
 	}
+	bs.Logger.Info("no birthdays found for today")
 }
 
 func (bs *BirthdaySchedule) UpcomingBirthdays(c slack.CommandInfo) {

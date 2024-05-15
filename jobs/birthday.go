@@ -103,7 +103,7 @@ func (bj *birthdayJob) birthdayStatus(c slack.CommandInfo) {
 	} else {
 		var birthday time.Time
 		birthday.UnmarshalJSON(b)
-		slack.SendMessage(c.Channel, "Your birthday is on "+birthday.UTC().Format("Jan 02 (2006)"))
+		slack.SendMessage(c.Channel, "Your birthday is on "+birthday.UTC().Format("Jan 02"))
 	}
 }
 
