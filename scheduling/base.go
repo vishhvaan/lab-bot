@@ -17,7 +17,6 @@ type scheduleRecord struct {
 
 type Schedule struct {
 	scheduleRecord
-	command   slack.CommandInfo
 	scheduler *gocron.Scheduler
 	logger    *log.Entry
 	schedule

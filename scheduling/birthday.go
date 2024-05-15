@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-co-op/gocron"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/vishhvaan/lab-bot/db"
@@ -12,7 +13,9 @@ import (
 )
 
 type BirthdaySchedule struct {
-	birthdayMessageChannel string
+	BirthdayMessageChannel string
+	scheduler              *gocron.Scheduler
+	CronExp                string
 	dbPath                 []string
 	Logger                 *log.Entry
 	sched                  map[string]*Schedule
@@ -21,6 +24,31 @@ type BirthdaySchedule struct {
 func (bs *BirthdaySchedule) Init(dbPath []string, logger *log.Entry) {
 	bs.sched = make(map[string]*Schedule)
 	bs.dbPath = dbPath
+
+	bs.scheduler = gocron.NewScheduler(time.Now().Local().Location())
+	bs.scheduler.Cron(bs.CronExp).Do(func() {
+		bs.congratulate(bs.BirthdayMessageChannel)
+	})
+}
+
+func (bs *BirthdaySchedule) congratulate(channel string) {
+	upcomingBirthdays, err := bs.readUpcomingBirthdays(false)
+	if err != nil {
+		go bs.Logger.WithError(err).Warn("cannot run daily birthday checks")
+		slack.Message("Cannot run daily birthday checks.")
+		return
+	}
+
+	var todayBDs []string
+	for u := range upcomingBirthdays["todayBDs"] {
+		todayBDs = append(todayBDs, u)
+	}
+
+	if len(todayBDs) > 0 {
+		birthdayMessage := "Happy Birthday " + strings.Join(todayBDs, ", ") + "! :tada:"
+		bs.Logger.Info("birthdays found for today")
+		slack.SendMessage(channel, birthdayMessage)
+	}
 }
 
 func (bs *BirthdaySchedule) UpcomingBirthdays(c slack.CommandInfo) {
@@ -34,47 +62,10 @@ func (bs *BirthdaySchedule) UpcomingBirthdays(c slack.CommandInfo) {
 		}
 	}
 
-	lU, err := db.ReadValue(append(bs.dbPath, "upcoming"), "lastUpdated")
+	upcomingBirthdays, err := bs.readUpcomingBirthdays(force)
 	if err != nil {
-		bs.errorMsg(c, err, "cannot decode birthday")
+		bs.errorMsg(c, err, "cannot read upcoming birthdays")
 		return
-	}
-
-	var lastUpdated time.Time
-	var upcomingBirthdays map[string]map[string]time.Time
-
-	if lU == nil {
-		upcomingBirthdays, err = bs.generateUpcomingBirthdays()
-		if err != nil {
-			bs.errorMsg(c, err, "cannot generate upcoming birthdays")
-			return
-		}
-	} else {
-		err = lastUpdated.UnmarshalJSON(lU)
-		if err != nil {
-			bs.errorMsg(c, err, "cannot decode time birthday message was last updated")
-			return
-		}
-
-		if lastUpdated.Truncate(24*time.Hour) == time.Now().Truncate(24*time.Hour) && !force {
-			uB, err := db.ReadValue(append(bs.dbPath, "upcoming"), "birthdays")
-			if err != nil {
-				bs.errorMsg(c, err, "cannot decode birthday")
-				return
-			}
-
-			err = json.Unmarshal(uB, &upcomingBirthdays)
-			if err != nil {
-				bs.errorMsg(c, err, "cannot read upcoming birthdays from db")
-				return
-			}
-		} else {
-			upcomingBirthdays, err = bs.generateUpcomingBirthdays()
-			if err != nil {
-				bs.errorMsg(c, err, "cannot generate upcoming birthdays")
-				return
-			}
-		}
 	}
 
 	message, err := bs.formatUpcomingBirthdays(upcomingBirthdays)
@@ -84,6 +75,46 @@ func (bs *BirthdaySchedule) UpcomingBirthdays(c slack.CommandInfo) {
 	}
 	slack.PostMessage(c.Channel, message)
 
+}
+
+func (bs *BirthdaySchedule) readUpcomingBirthdays(force bool) (upcomingBirthdays map[string]map[string]time.Time, err error) {
+	lU, err := db.ReadValue(append(bs.dbPath, "upcoming"), "lastUpdated")
+	if err != nil {
+		return nil, err
+	}
+
+	if lU == nil {
+		upcomingBirthdays, err = bs.generateUpcomingBirthdays()
+		if err != nil {
+			return nil, err
+		}
+		return upcomingBirthdays, nil
+	}
+
+	var lastUpdated time.Time
+	err = lastUpdated.UnmarshalJSON(lU)
+	if err != nil {
+		return nil, err
+	}
+
+	if lastUpdated.Truncate(24*time.Hour) == time.Now().Truncate(24*time.Hour) && !force {
+		uB, err := db.ReadValue(append(bs.dbPath, "upcoming"), "birthdays")
+		if err != nil {
+			return nil, err
+		}
+
+		err = json.Unmarshal(uB, &upcomingBirthdays)
+		if err != nil {
+			return nil, err
+		}
+		return upcomingBirthdays, nil
+	}
+
+	upcomingBirthdays, err = bs.generateUpcomingBirthdays()
+	if err != nil {
+		return nil, err
+	}
+	return upcomingBirthdays, nil
 }
 
 func (bs *BirthdaySchedule) generateUpcomingBirthdays() (upcomingBirthdays map[string]map[string]time.Time, err error) {
@@ -148,15 +179,14 @@ func (bs *BirthdaySchedule) formatUpcomingBirthdays(upcomingBirthdays map[string
 	var m strings.Builder
 
 	genUsers := func(users map[string]time.Time) (s string) {
-		var v strings.Builder
 		if len(users) == 0 {
 			return "none\n"
 		} else {
+			var items []string
 			for user, birthday := range users {
-				v.WriteString(slack.GetUserName(user) + " [" + birthday.UTC().Format("Jan 02") + "], ")
+				items = append(items, slack.GetUserName(user)+" ["+birthday.UTC().Format("Jan 02")+"]")
 			}
-			o := v.String()
-			return o[:len(o)-2] + "\n"
+			return strings.Join(items, ", ") + "\n"
 		}
 	}
 
