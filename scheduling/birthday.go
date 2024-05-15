@@ -28,7 +28,7 @@ func (bs *BirthdaySchedule) Init(dbPath []string, logger *log.Entry) {
 
 	bs.scheduler = gocron.NewScheduler(time.Now().Local().Location())
 	bs.scheduler.Cron(bs.CronExp).Do(func() {
-		bs.Logger.Info("running daily congratulate")
+		bs.Logger.Info("running daily birthday congratulate job")
 		bs.congratulate(bs.BirthdayMessageChannel)
 	})
 
@@ -56,7 +56,7 @@ func (bs *BirthdaySchedule) congratulate(channel string) {
 
 	var todayBDs []string
 	for u := range upcomingBirthdays["todayBDs"] {
-		todayBDs = append(todayBDs, u)
+		todayBDs = append(todayBDs, "<@"+u+">")
 	}
 
 	if len(todayBDs) > 0 {
