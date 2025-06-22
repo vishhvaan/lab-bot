@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -91,19 +92,68 @@ func (bj *birthdayJob) numerateBirthdays() (numBirthdays int, err error) {
 	return len(keys), err
 }
 
+// birthday status [@user]
 func (bj *birthdayJob) birthdayStatus(c slack.CommandInfo) {
-	b, err := db.ReadValue(append(bj.dbPath, "records"), c.User)
-	if err != nil {
-		bj.errorMsg(c, err, "cannot read existing birthday from db")
+	isMention := func(tok string) bool {
+		return strings.HasPrefix(tok, "<@") && strings.HasSuffix(tok, ">")
+	}
+	mentionToID := func(tok string) string {
+		return strings.TrimSuffix(strings.TrimPrefix(tok, "<@"), ">")
+	}
+
+	// parse tokens after “birthday status”
+	targetUser := c.User
+	mentionSeen := false
+
+	for _, tok := range c.Fields[2:] { // skip “birthday” “status”
+		if isMention(tok) {
+			if mentionSeen {
+				slack.SendMessage(c.Channel,
+					"please mention at most one user")
+				return
+			}
+			targetUser = mentionToID(tok)
+			mentionSeen = true
+			continue
+		}
+		// any other token is unexpected
+		slack.SendMessage(c.Channel,
+			"usage: birthday status [@user]")
 		return
 	}
 
+	// fetch birthday from DB
+	b, err := db.ReadValue(append(bj.dbPath, "records"), targetUser)
+	if err != nil {
+		bj.errorMsg(c, err, "cannot read birthday from db")
+		return
+	}
 	if b == nil {
-		slack.SendMessage(c.Channel, "No birthday in the database. Use the command 'birthday record 2006-10-24' to record your birthday")
+		if targetUser == c.User {
+			slack.SendMessage(c.Channel, "You have no birthday on record")
+		} else {
+			m := fmt.Sprintf("%s has no birthday on record", slack.GetUserName(targetUser))
+			slack.SendMessage(c.Channel, m)
+
+		}
+		return
+	}
+
+	var bd time.Time
+	if err := bd.UnmarshalJSON(b); err != nil {
+		bj.errorMsg(c, err, "cannot decode birthday from db")
+		return
+	}
+
+	// format & reply
+	display := bd.Format("January 2") // show only month-day, ignore stored year
+
+	if targetUser == c.User {
+		slack.SendMessage(c.Channel,
+			fmt.Sprintf("Your birthday on record is *%s*", display))
 	} else {
-		var birthday time.Time
-		birthday.UnmarshalJSON(b)
-		slack.SendMessage(c.Channel, "Your birthday is on "+birthday.UTC().Format("Jan 02"))
+		slack.SendMessage(c.Channel,
+			fmt.Sprintf("%s's birthday on record is *%s*", slack.GetUserName(targetUser), display))
 	}
 }
 
