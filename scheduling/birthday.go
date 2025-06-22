@@ -215,7 +215,7 @@ func (bs *BirthdaySchedule) formatUpcomingBirthdays(upcomingBirthdays map[string
 		}
 	}
 
-	m.WriteString("Upcoming Birthdays:\n")
+	m.WriteString("*Upcoming Birthdays:*\n")
 	m.WriteString("Today: ")
 	m.WriteString(genUsers(upcomingBirthdays["todayBDs"]))
 	m.WriteString("Tomorrow: ")
