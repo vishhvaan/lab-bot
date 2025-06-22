@@ -147,22 +147,31 @@ func (bs *BirthdaySchedule) generateUpcomingBirthdays() (upcomingBirthdays map[s
 	nextMonth := today.AddDate(0, 1, 0)
 
 	updateUpcoming := func(userKey []byte, birthdayValue []byte) error {
-		var birthday time.Time
-		err := birthday.UnmarshalJSON(birthdayValue)
+		var bd time.Time
+		err := bd.UnmarshalJSON(birthdayValue)
 		if err != nil {
 			return err
 		}
 
-		birthday = time.Date(time.Now().Year(), birthday.Month(), birthday.Day(), birthday.Hour(), birthday.Minute(), birthday.Second(), birthday.Nanosecond(), birthday.Location())
+		loc := now.Location()
+		bd = time.Date(now.Year(), bd.Month(), bd.Day(), 0, 0, 0, 0, loc)
 
-		if birthday == today {
-			upcomingBirthdays["todayBDs"][string(userKey)] = birthday
-		} else if birthday == tomorrow {
-			upcomingBirthdays["nextDayBDs"][string(userKey)] = birthday
-		} else if birthday.Before(nextWeek) {
-			upcomingBirthdays["nextWeekBDs"][string(userKey)] = birthday
-		} else if birthday.Before(nextMonth) {
-			upcomingBirthdays["nextMonthBDs"][string(userKey)] = birthday
+		if bd.Before(today) {
+			bd = bd.AddDate(1, 0, 0) // roll over into next year
+		}
+
+		switch {
+		case bd.Equal(today):
+			upcomingBirthdays["todayBDs"][string(userKey)] = bd
+
+		case bd.Equal(tomorrow):
+			upcomingBirthdays["nextDayBDs"][string(userKey)] = bd
+
+		case bd.After(tomorrow) && bd.Before(nextWeek):
+			upcomingBirthdays["nextWeekBDs"][string(userKey)] = bd
+
+		case bd.After(nextWeek) && bd.Before(nextMonth):
+			upcomingBirthdays["nextMonthBDs"][string(userKey)] = bd
 		}
 		return nil
 	}
