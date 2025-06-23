@@ -2,6 +2,8 @@ package scheduling
 
 import (
 	"encoding/json"
+	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -206,13 +208,30 @@ func (bs *BirthdaySchedule) formatUpcomingBirthdays(upcomingBirthdays map[string
 	genUsers := func(users map[string]time.Time) (s string) {
 		if len(users) == 0 {
 			return "none\n"
-		} else {
-			var items []string
-			for user, birthday := range users {
-				items = append(items, slack.GetUserName(user)+" ["+birthday.UTC().Format("Jan 02")+"]")
-			}
-			return strings.Join(items, ", ") + "\n"
 		}
+
+		type bdentry struct {
+			name string
+			date time.Time
+		}
+		var list []bdentry
+		for id, d := range users {
+			name := slack.GetUserName(id)
+			if name == "" { // fallback to mention if display-name missing
+				name = "<@" + id + ">"
+			}
+			list = append(list, bdentry{name, d})
+		}
+
+		sort.Slice(list, func(i, j int) bool {
+			return list[i].date.Before(list[j].date)
+		})
+
+		var items []string
+		for _, e := range list {
+			items = append(items, fmt.Sprintf("%s [%s]", e.name, e.date.Format("Jan 02")))
+		}
+		return strings.Join(items, ", ") + "\n"
 	}
 
 	m.WriteString("*Upcoming Birthdays:*\n")
