@@ -247,7 +247,7 @@ func (bj *birthdayJob) recordBirthday(c slack.CommandInfo) {
 			return
 		}
 	}
-	newBD = newBD.Truncate(24 * time.Hour).In(loc)
+	newBD = time.Date(newBD.Year(), newBD.Month(), newBD.Day(), 0, 0, 0, 0, loc)
 
 	// db read / write
 	b, err := db.ReadValue(append(bj.dbPath, "records"), targetUser)
