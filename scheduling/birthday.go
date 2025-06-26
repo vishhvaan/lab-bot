@@ -115,7 +115,9 @@ func (bs *BirthdaySchedule) readUpcomingBirthdays(force bool) (upcomingBirthdays
 		return nil, err
 	}
 
-	if lastUpdated.Truncate(24*time.Hour) == time.Now().Truncate(24*time.Hour) && !force {
+	todayLocal := startOfLocalDay(time.Now())
+	updatedLocal := startOfLocalDay(lastUpdated)
+	if updatedLocal.Equal(todayLocal) && !force {
 		uB, err := db.ReadValue(append(bs.dbPath, "upcoming"), "birthdays")
 		if err != nil {
 			return nil, err
@@ -143,8 +145,8 @@ func (bs *BirthdaySchedule) generateUpcomingBirthdays() (upcomingBirthdays map[s
 	upcomingBirthdays["nextMonthBDs"] = make(map[string]time.Time)
 
 	now := time.Now()
-	loc := now.Location()
-	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
+
+	today := startOfLocalDay(now)
 	tomorrow := today.AddDate(0, 0, 1)
 	nextWeek := today.AddDate(0, 0, 7)
 	nextMonth := today.AddDate(0, 1, 0)
@@ -251,4 +253,9 @@ func (bs *BirthdaySchedule) formatUpcomingBirthdays(upcomingBirthdays map[string
 func (bs *BirthdaySchedule) errorMsg(c slack.CommandInfo, err error, message string) {
 	go bs.Logger.WithField("fields", c.Fields).WithError(err).Warn(message)
 	slack.PostMessage(c.Channel, message)
+}
+
+func startOfLocalDay(t time.Time) time.Time {
+	y, m, d := t.Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, t.Location())
 }
