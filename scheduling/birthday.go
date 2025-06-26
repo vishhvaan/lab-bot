@@ -143,7 +143,8 @@ func (bs *BirthdaySchedule) generateUpcomingBirthdays() (upcomingBirthdays map[s
 	upcomingBirthdays["nextMonthBDs"] = make(map[string]time.Time)
 
 	now := time.Now()
-	today := now.Truncate(24 * time.Hour)
+	loc := now.Location()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
 	tomorrow := today.AddDate(0, 0, 1)
 	nextWeek := today.AddDate(0, 0, 7)
 	nextMonth := today.AddDate(0, 1, 0)
